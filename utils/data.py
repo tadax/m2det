@@ -7,6 +7,7 @@ import numpy as np
 
 from utils.assign_boxes import assign_boxes
 from utils.get_prior import get_priors
+from utils.augment import augment
 
 class Data:
     def __init__(self, image_dir, label_dir, num_classes, input_size):
@@ -63,8 +64,6 @@ class Data:
             npimg = np.fromfile(im_path, dtype=np.uint8)
             img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            img = cv2.resize(img, (self.input_size, self.input_size))
-            img = img - [123.68, 116.78, 103.94] # vgg preprocessing
 
             with open(bb_path) as f:
                 lines = f.read().splitlines()
@@ -75,6 +74,9 @@ class Data:
                 onehot_label = np.eye(self.num_classes)[int(ix)]
                 box = [float(xmin), float(ymin), float(xmax), float(ymax)] + onehot_label.tolist()
                 boxes.append(box)
+
+            img, boxes = augment(img, boxes, self.input_size) #debug
+
             if len(boxes) == 0:
                 continue
             boxes = np.array(boxes)
