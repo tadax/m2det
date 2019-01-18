@@ -75,7 +75,7 @@ def main(args):
         _, loss_value = sess.run([train_op, total_loss], feed_dict={inputs: x_batch, y_true: t_batch})
         step_value = sess.run(global_step) // 2
         logger.info('step: {}, loss: {}'.format(step_value, loss_value))
-        if (step_value) % 1000 == 0:
+        if (step_value) % 10000 == 0:
             saver = tf.train.Saver()
             dst = os.path.join(args.model_dir, 'variables')
             saver.save(sess, dst, write_meta_graph=False)

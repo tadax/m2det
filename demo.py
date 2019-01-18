@@ -30,7 +30,7 @@ def get_classes(index):
     sorted(obj, key=lambda x:x[0])
     classes = [j for i, j in obj]
     np.random.seed(1234)
-    colors = np.random.randint(64, 256, size=(len(classes), 3))
+    colors = np.random.randint(64, 196, size=(len(classes), 3))
     return classes[index], tuple(colors[index].tolist())
 
 def main(args):
@@ -41,12 +41,21 @@ def main(args):
         prob_threshold=args.threshold, 
         nms_threshold=args.nms)
 
-    img = cv2.imread(args.inputs)
-    results = det.detect(img)
-    draw(img, results)
-    cv2.imshow('', img)
-    cv2.waitKey(0)
-    cv2.imwrite('result.jpg', img)
+    if args.inputs.endswith('.mp4'):
+        cap = cv2.VideoCapture(args.inputs)
+        while True:
+            ret, img = cap.read()
+            if not ret: break
+            results = det.detect(img)
+            draw(img, results)
+            cv2.imshow('', img)
+            cv2.waitKey(1)
+    else:
+        img = cv2.imread(args.inputs)
+        results = det.detect(img)
+        draw(img, results)
+        cv2.imshow('', img)
+        cv2.waitKey(0)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
