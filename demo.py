@@ -12,17 +12,18 @@ from mscoco import table
 def draw(frame, results):
     border_size = 8
     font_size = 1.0
-    font_scale = 2
-    font = cv2.LINE_AA
+    font_scale = 1
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    line_type = cv2.LINE_AA
     text_color = (255, 255, 255)
     for result in results:
         prob, index, left, top, right, bottom = result
         name, color = get_classes(index)
         cv2.rectangle(frame, (left, top), (right, bottom), color, border_size)
-        (label_width, label_height), baseline = cv2.getTextSize(name, cv2.LINE_AA, font_size, font_scale)
+        (label_width, label_height), baseline = cv2.getTextSize(name, font, font_size, font_scale)
         cv2.rectangle(frame, (left, top), (left + label_width, top + label_height), color, -1)
         cv2.putText(frame, name, (left, top + label_height - border_size), 
-                    cv2.LINE_AA, font_size, text_color, font_scale, cv2.LINE_AA)
+                    font, font_size, text_color, font_scale, line_type)
         print(name, prob, left, top, right, bottom)
 
 def get_classes(index):
