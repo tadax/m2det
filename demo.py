@@ -10,8 +10,8 @@ from utils.detector import Detector
 from mscoco import table
 
 def draw(frame, results):
-    border_size = 8
-    font_size = 1.0
+    border_size = 6
+    font_size = 0.8
     font_scale = 1
     font = cv2.FONT_HERSHEY_SIMPLEX
     line_type = cv2.LINE_AA
