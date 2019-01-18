@@ -42,8 +42,15 @@ def main(args):
     var2 = [v for v in train_var if 'M2Det' in v.name]
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
-        opt1 = tf.train.AdamOptimizer(learning_rate=1e-4)
-        opt2 = tf.train.AdamOptimizer(learning_rate=1e-3)
+        if args.optimizer == 'adam':
+            opt1 = tf.train.AdamOptimizer(learning_rate=1e-4)
+            opt2 = tf.train.AdamOptimizer(learning_rate=1e-3)
+        elif args.optimzer == 'momentum':
+            opt1 = tf.train.MomentumOptimizer(learning_rate=args.learning_rate, momentum=0.9)
+            opt2 = tf.train.MomentumOptimizer(learning_rate=args.learning_rate*10, momentum=0.9)
+        else:
+            raise
+
         grads = tf.gradients(total_loss, var1+var2)
         grads1 = grads[:len(var1)]
         grads2 = grads[len(var1):]
@@ -58,7 +65,7 @@ def main(args):
     restore_var = []
     for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES):
         to_restore = True
-        for r in ['M2Det', 'Adam', 'beta1_power', 'beta2_power', 'global_step']:
+        for r in ['M2Det', 'Adam', 'beta1_power', 'beta2_power', 'global_step', 'Momentum']:
             if r in v.name: to_restore = False
         if to_restore: restore_var.append(v)
     saver = tf.train.Saver(restore_var)
@@ -87,6 +94,8 @@ if __name__ == '__main__':
     parser.add_argument('--model_dir', default='weights')
     parser.add_argument('--pretrained_model_path', default='weights/pretrain')
     parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--learning_rate', type=float, default=3e-4)
+    parser.add_argument('--optimizer', type=str, default='adam')
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--input_size', type=int, default=320)
     parser.add_argument('--num_boxes', type=int, default=8010) # 40*40*3+20*20*6+10*10*6+5*5*6+3*3*6+1*1*6=8010
