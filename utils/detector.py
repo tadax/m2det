@@ -8,14 +8,14 @@ import argparse
 
 from m2det import M2Det
 from utils.get_prior import get_priors
+from utils.nms import nms
 
 class Detector:
-    def __init__(self, model_path, input_size, num_classes, prob_threshold, nms_threshold):
+    def __init__(self, model_path, input_size, num_classes, threshold):
         self.model_path = model_path
         self.input_size = input_size
         self.num_classes = num_classes
-        self.prob_threshold = prob_threshold
-        self.nms_threshold = nms_threshold
+        self.threshold = threshold
         self.priors = get_priors(input_size=self.input_size)
         self.build()
 
@@ -49,33 +49,6 @@ class Detector:
         decode_bbox = np.minimum(np.maximum(decode_bbox, 0.0), 1.0)
         return decode_bbox
 
-    def nms(self, boxes):
-        prob = boxes[:, 0]
-        left = boxes[:, 1]
-        top = boxes[:, 2]
-        right = boxes[:, 3]
-        bottom = boxes[:, 4]
-        area = (right - left) * (bottom - top)
-        I = np.argsort(prob)
-        pick = np.zeros_like(prob, dtype=np.int32)
-        counter = 0
-        while I.size > 0:
-            i = I[-1]
-            pick[counter] = i
-            counter += 1
-            idx = I[:-1]
-            x1 = np.maximum(left[i], left[idx])
-            y1 = np.maximum(top[i], top[idx])
-            x2 = np.minimum(right[i], right[idx])
-            y2 = np.minimum(bottom[i], bottom[idx])
-            w = np.maximum(0.0, x2 - x1)
-            h = np.maximum(0.0, y2 - y1)
-            inter = w * h
-            o = inter / np.maximum((area[i] + area[idx] - inter), 1e-5)
-            I = I[np.where(o <= self.nms_threshold)]
-        pick = pick[:counter]
-        return pick
-
     def detect(self, img):
         h, w = img.shape[:2]
         inp = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -89,7 +62,6 @@ class Detector:
         decoded_boxes = self.decode_boxes(boxes)
 
         boxes = []
-        detected = []
         for box, pred in zip(decoded_boxes, preds):
             xmin, ymin, xmax, ymax = box
             clsid = np.argmax(pred)
@@ -98,22 +70,15 @@ class Detector:
                 continue
             clsid -= 1 # decrement to skip background class
             prob = np.max(pred)
-            if prob < self.prob_threshold:
+            if prob < self.threshold:
                 continue
             left = xmin * w
             top = ymin * h
             right = xmax * w
             bottom = ymax * h
-            boxes.append([prob, left, top, right, bottom])
-            detected.append(clsid)
+            boxes.append([clsid, prob, left, top, right, bottom])
 
-        results = []
         if len(boxes) > 0:
-            boxes = np.array(boxes)
-            pick = self.nms(boxes)
-            for i in pick:
-                box = boxes[i]
-                index = detected[i]
-                result = [float(box[0]), index, int(box[1]), int(box[2]), int(box[3]), int(box[4])]
-                results.append(result)
-        return results
+            return nms(boxes)
+        else:
+            return {}

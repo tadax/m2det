@@ -16,15 +16,17 @@ def draw(frame, results):
     font = cv2.FONT_HERSHEY_SIMPLEX
     line_type = cv2.LINE_AA
     text_color = (255, 255, 255)
-    for result in results:
-        prob, index, left, top, right, bottom = result
-        name, color = get_classes(index)
-        cv2.rectangle(frame, (left, top), (right, bottom), color, border_size)
-        (label_width, label_height), baseline = cv2.getTextSize(name, font, font_size, font_scale)
-        cv2.rectangle(frame, (left, top), (left + label_width, top + label_height), color, -1)
-        cv2.putText(frame, name, (left, top + label_height - border_size), 
-                    font, font_size, text_color, font_scale, line_type)
-        print(name, prob, left, top, right, bottom)
+    for index, values in results.items():
+        for value in values:
+            coord, prob = value
+            left, top, right, bottom = [int(i) for i in coord]
+            name, color = get_classes(index)
+            cv2.rectangle(frame, (left, top), (right, bottom), color, border_size)
+            (label_width, label_height), baseline = cv2.getTextSize(name, font, font_size, font_scale)
+            cv2.rectangle(frame, (left, top), (left + label_width, top + label_height), color, -1)
+            cv2.putText(frame, name, (left, top + label_height - border_size), 
+                        font, font_size, text_color, font_scale, line_type)
+            print('{}: {} - left: {}, top: {}, right: {}, bottom: {}'.format(name, prob, left, top, right, bottom))
 
 def get_classes(index):
     obj = [v for k, v in table.mscoco2017.items()]
@@ -39,8 +41,7 @@ def main(args):
         model_path=args.model_path, 
         input_size=args.input_size, 
         num_classes=args.num_classes, 
-        prob_threshold=args.threshold, 
-        nms_threshold=args.nms)
+        threshold=args.threshold)
 
     if args.inputs.endswith('.mp4'):
         cap = cv2.VideoCapture(args.inputs)
@@ -64,8 +65,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_path', required=True)
     parser.add_argument('--input_size', type=int, default=320)
     parser.add_argument('--num_classes', type=int, default=80)
-    parser.add_argument('--threshold', type=float, default=0.60)
-    parser.add_argument('--nms', type=float, default=0.20)
+    parser.add_argument('--threshold', type=float, default=0.20)
     parser.add_argument('--gpu', type=str, default='0', required=True)
     os.environ['CUDA_VISIBLE_DEVICES'] = parser.parse_args().gpu
     main(parser.parse_args())
