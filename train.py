@@ -44,7 +44,7 @@ def main(args):
     with tf.control_dependencies(update_ops):
         if args.optimizer == 'adam':
             opt1 = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
-            opt2 = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+            opt2 = tf.train.AdamOptimizer(learning_rate=args.learning_rate*10)
         elif args.optimizer == 'momentum':
             opt1 = tf.train.MomentumOptimizer(learning_rate=args.learning_rate, momentum=0.9)
             opt2 = tf.train.MomentumOptimizer(learning_rate=args.learning_rate*10, momentum=0.9)
