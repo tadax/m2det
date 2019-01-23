@@ -53,7 +53,7 @@ class Detector:
         h, w = img.shape[:2]
         inp = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         inp = cv2.resize(inp, (self.input_size, self.input_size))
-        inp = inp - [123.68, 116.78, 103.94] # vgg preprocessing
+        inp = (inp - 127.5) / 128.0
 
         # shape of y_pred: (?, num_boxes, 4 + num_classes)
         outs = self.sess.run(self.net.prediction, feed_dict={self.inputs: np.array([inp])})[0]

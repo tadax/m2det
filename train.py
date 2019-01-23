@@ -40,28 +40,13 @@ def main(args):
     train_var = tf.trainable_variables()
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
-        if args.optimizer == 'adam':
-            opt = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
-        elif args.optimizer == 'momentum':
-            opt = tf.train.MomentumOptimizer(learning_rate=args.learning_rate, momentum=0.9)
-        else:
-            raise
+        opt = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
         grads = tf.gradients(total_loss, train_var)
         train_op = opt.apply_gradients(zip(grads, train_var), global_step=global_step)
 
     sess = tf.Session()
     init_op = tf.global_variables_initializer()
     sess.run(init_op)
-
-    restore_var = []
-    for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES):
-        to_restore = True
-        for r in ['M2Det', 'Adam', 'beta1_power', 'beta2_power', 'global_step', 'Momentum']:
-            if r in v.name: to_restore = False
-        if to_restore: restore_var.append(v)
-    saver = tf.train.Saver(restore_var)
-    saver.restore(sess, args.pretrained_model_path)
-    logger.info('Restoring pretrained model')
 
     if tf.train.get_checkpoint_state(args.model_dir):
         saver = tf.train.Saver()
@@ -83,10 +68,8 @@ if __name__ == '__main__':
     parser.add_argument('--image_dir', required=True)
     parser.add_argument('--label_dir', required=True)
     parser.add_argument('--model_dir', default='weights/')
-    parser.add_argument('--pretrained_model_path', default='weights/pretrained/variables')
     parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--learning_rate', type=float, default=3e-4)
-    parser.add_argument('--optimizer', type=str, default='adam')
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--input_size', type=int, default=320)
     parser.add_argument('--num_boxes', type=int, default=8010) # 40*40*3+20*20*6+10*10*6+5*5*6+3*3*6+1*1*6=8010
