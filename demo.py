@@ -16,17 +16,17 @@ def draw(frame, results):
     font = cv2.FONT_HERSHEY_SIMPLEX
     line_type = cv2.LINE_AA
     text_color = (255, 255, 255)
-    for index, values in results.items():
-        for value in values:
-            coord, prob = value
-            left, top, right, bottom = [int(i) for i in coord]
-            name, color = get_classes(index)
-            cv2.rectangle(frame, (left, top), (right, bottom), color, border_size)
-            (label_width, label_height), baseline = cv2.getTextSize(name, font, font_size, font_scale)
-            cv2.rectangle(frame, (left, top), (left + label_width, top + label_height), color, -1)
-            cv2.putText(frame, name, (left, top + label_height - border_size), 
-                        font, font_size, text_color, font_scale, line_type)
-            print('{}: {} - left: {}, top: {}, right: {}, bottom: {}'.format(name, prob, left, top, right, bottom))
+
+    for result in results:
+        cls, prob, coord = result
+        left, top, right, bottom = [int(i) for i in coord]
+        name, color = get_classes(cls)
+        cv2.rectangle(frame, (left, top), (right, bottom), color, border_size)
+        (label_width, label_height), baseline = cv2.getTextSize(name, font, font_size, font_scale)
+        cv2.rectangle(frame, (left, top), (left + label_width, top + label_height), color, -1)
+        cv2.putText(frame, name, (left, top + label_height - border_size), 
+                    font, font_size, text_color, font_scale, line_type)
+        print('{}: {} - left: {}, top: {}, right: {}, bottom: {}'.format(name, prob, left, top, right, bottom))
 
 def get_classes(index):
     obj = [v for k, v in table.mscoco2017.items()]

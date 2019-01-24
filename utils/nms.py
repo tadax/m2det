@@ -23,20 +23,18 @@ def nms(boxes, iou_thr=0.2):
     classes = boxes[:, 0]
     unique_classes = [int(i) for i in list(set(classes))]
 
-    results = {}
+    results = []
     for cls in unique_classes:
         mask = classes == cls
         mask_boxes = (boxes[:, 1:])[mask]
         mask_boxes = mask_boxes[mask_boxes[:, 0].argsort()[::-1]] # sort by prob
-        probs = mask_boxes[:, 0]
-        coords = mask_boxes[:, 1:]
+        probs = mask_boxes[:, 0] # prob
+        coords = mask_boxes[:, 1:] # left, top, right, bottom
 
         while len(coords) > 0:
             coord = coords[0]
             prob = probs[0]
-            if not cls in results:
-                results[cls] = []
-            results[cls].append((coord, prob))
+            results.append((cls, prob, coord))
             coords = coords[1:]
             probs = probs[1:]
             mask = np.array([calc_iou(coord, x) for x in coords]) < iou_thr
