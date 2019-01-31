@@ -1,21 +1,18 @@
-# :construction: Work in Progress :construction:
-
 # M2Det
 
-This is an implementation of M2Det with TensorFlow.
-M2Det is proposed by Q Zhao in 
-[M2Det: A Single-Shot Object Detector based on Multi-Level Feature Pyramid Network](
-https://arxiv.org/pdf/1811.04533.pdf).
+An implementation of
+[Q Zhao et al., "M2Det: A Single-Shot Object Detector based on Multi-Level Feature Pyramid Network", 2019](
+https://arxiv.org/pdf/1811.04533.pdf) using TensorFlow.
 
 ## Results
 
 COCO 2017 dataset is used for training.
 
 ![](data/yolov2_result.jpg)
-![](data/yolo_result.jpg)
-![](data/innsbruck_result.png)
 
-Not so good...
+![](data/yolo_result.jpg)
+
+![](data/innsbruck_result.png)
 
 ## Performance
 
@@ -31,9 +28,9 @@ To be released.
 
 ### Model
 
-You can download the trained model [[link](https://www.dropbox.com/s/f60stlms3dp7slu/weights_2019-01-14.tar.gz?dl=0)].
+:warning: Notice: it's work in progress.
 
-:warning: Notice: it's work in progress and the performance is not so good.
+You can download the trained model [[weights_2019-01-31](https://dl.dropboxusercontent.com/s/1lige7lokxsu4tn/weights_2019-01-31.tar.gz?dl=0)].
 
 ### Run Demo
 
@@ -67,3 +64,16 @@ $ bash download.sh
 ```
 $ python train.py --image_dir <image_dir> --label_dir <label_dir>
 ```
+
+## Note
+
+### ImageNet pre-training
+
+ImaneNet pre-training is not used.
+
+cf. [Kaiming He et al., "Rethinking ImageNet Pre-training", 2018](https://arxiv.org/pdf/1811.08883.pdf)
+
+
+### Learning rate scheduling
+
+To be written.
