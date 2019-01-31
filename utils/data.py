@@ -63,7 +63,7 @@ class Data:
                 box = [float(xmin), float(ymin), float(xmax), float(ymax)] + onehot_label.tolist()
                 boxes.append(box)
 
-            img, boxes = augment(img, boxes, self.input_size) #debug
+            img, boxes = augment(img, boxes, self.input_size)
 
             if len(boxes) == 0:
                 continue
