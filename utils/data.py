@@ -24,18 +24,6 @@ class Data:
         p.start()
 
     def get_paths(self):
-        label_paths = []
-        image_paths = []
-        for label_dir, image_dir in zip(self.label_dirs, self.image_dirs):
-            for label_path in glob.glob(os.path.join(label_dir, '*.txt')):
-                image_path = os.path.join(image_dir, os.path.splitext(os.path.basename(label_path))[0] + '.jpg')
-                if os.path.exists(image_path) and image_path not in image_paths:
-                    image_paths.append(image_path)
-                    label_paths.append(label_path)
-        paths = [list(x) for x in list(zip(label_paths, image_paths))]
-        return paths
-
-    def get_paths(self):
         paths = []
         for bb_path in glob.glob(os.path.join(self.label_dir, '*.txt')):
             im_path = os.path.join(self.image_dir, os.path.splitext(os.path.basename(bb_path))[0] + '.jpg')
