@@ -20,7 +20,7 @@ def calc_iou(box1, box2):
     iou = intersection / union
     return iou
 
-def calc_precision(predict_labels, true_labels, iou_threshold, clsid, prob_threshold):
+def calc_precision(predict_labels, true_labels, clsid, prob_threshold, iou_threshold):
     tp = 0
     fp = 0
     possible_pos = 0
@@ -58,7 +58,7 @@ def calc_precision(predict_labels, true_labels, iou_threshold, clsid, prob_thres
 
         tp += sum([1 for e in predict_assign if e == True])
         fp += sum([1 for e in predict_assign if e == False])
-        possible_pos += len(true_label)
+        possible_pos += sum([1 for true_el in true_label if int(true_el[0]) == clsid])
 
     if (tp + fp == 0):
         precision = 0.0
@@ -66,22 +66,21 @@ def calc_precision(predict_labels, true_labels, iou_threshold, clsid, prob_thres
         precision = tp / (tp + fp)
 
     if possible_pos == 0:
-        recall = 0.0
+        recall = None
     else:
         recall = tp / possible_pos
 
     return precision, recall
+
 
 def main(args):
     det = Detector(
         model_path=args.model_path, 
         input_size=args.input_size, 
         num_classes=args.num_classes, 
-        prob_threshold=0.05,
-        nms_threshold=0.50)
+        threshold=0.0)
 
     img_paths = glob.glob(os.path.join(args.image_dir, '*'))
-    img_paths = img_paths[:100]
     predict_labels = []
     true_labels = []
 
@@ -93,8 +92,8 @@ def main(args):
 
         with open(label_path) as f:
             lines = f.read().splitlines()
-        labels = [line.split('\t') for line in lines]
-        true_labels.append(labels)
+        true_label = [line.split('\t') for line in lines]
+        true_labels.append(true_label)
 
         img = cv2.imread(img_path)
         h_img, w_img = img.shape[:2]
@@ -102,45 +101,51 @@ def main(args):
         results = sorted(results, key=lambda x:x[0], reverse=True)
         predict_label = []
         for result in results:
-            prob, clsid, xmin, ymin, xmax, ymax = result
+            cls, prob, coord = result
+            xmin, ymin, xmax, ymax = [int(i) for i in coord]
             xmin /= w_img
             ymin /= h_img
             xmax /= w_img
             ymax /= h_img
-            predict_label.append([prob, clsid, xmin, ymin, xmax, ymax])
+            predict_label.append([prob, cls, xmin, ymin, xmax, ymax])
         predict_labels.append(predict_label)
 
     print('Eval size: {}'.format(len(predict_labels)))
 
-    APs = []
-    step_num = 10
-    for iou_threshold in [0.5]:
+    APs = [[] for _ in range(10)]
+    for ix, iou_threshold in enumerate(np.arange(0.50, 0.96, 0.05)):
         for clsid in range(args.num_classes):
             precisions = []
             recalls = []
-            for prob_threshold in np.arange(0.0, 1.01, 0.05):
-                precision, recall = calc_precision(predict_labels, true_labels, iou_threshold, 
-                                                   clsid, prob_threshold)
-                precisions.append(precision)
-                recalls.append(recall)
+            for prob_threshold in np.arange(0.0, 1.01, 0.1):
+                precision, recall = calc_precision(predict_labels, true_labels, 
+                                                   clsid, prob_threshold,
+                                                   iou_threshold)
+                if recall is not None:
+                    precisions.append(precision)
+                    recalls.append(recall)
 
+            if len(recalls) == 0:
+                continue
+
+            step_num = 10
             maximum_precision = np.zeros(step_num + 1)
-            for idx in range(len(recalls)):
-                v = precisions[idx]
-                k = int(recalls[idx] * step_num) # horizontal axis 
+            for jx in range(len(recalls)):
+                v = precisions[jx]
+                k = int(recalls[jx] * step_num) # horizontal axis 
                 maximum_precision[k] = max(maximum_precision[k], v)
-
+                
             # intrepolation
             v = 0
-            for idx in range(step_num + 1):
-                v = max(v, maximum_precision[-idx-1])
-                maximum_precision[-idx-1] = v
-
+            for jx in range(step_num + 1):
+                v = max(v, maximum_precision[-jx-1])
+                maximum_precision[-jx-1] = v
+                
             AP = np.mean(maximum_precision)
-            APs.append(AP)
+            APs[ix].append(AP)
 
-    mAP = np.mean(APs)
-    print('mAP: {}'.format(mAP))
+    print('mAP@0.5: {}'.format(np.mean(APs[0])))
+    print('mAP@[0.5:0.95]: {}'.format(np.mean(APs)))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -149,6 +154,6 @@ if __name__ == '__main__':
     parser.add_argument('--model_path', required=True)
     parser.add_argument('--input_size', type=int, default=320)
     parser.add_argument('--num_classes', type=int, default=80)
-    parser.add_argument('--gpu', type=str, default='0', required=True)
+    parser.add_argument('--gpu', type=str, default='0')
     os.environ['CUDA_VISIBLE_DEVICES'] = parser.parse_args().gpu
     main(parser.parse_args())

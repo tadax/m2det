@@ -38,39 +38,15 @@ def main(args):
 
     global_step = tf.Variable(0, name='global_step', trainable=False)
     train_var = tf.trainable_variables()
-    var1 = [v for v in train_var if 'M2Det' not in v.name]
-    var2 = [v for v in train_var if 'M2Det' in v.name]
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
-        if args.optimizer == 'adam':
-            opt1 = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
-            opt2 = tf.train.AdamOptimizer(learning_rate=args.learning_rate*10)
-        elif args.optimizer == 'momentum':
-            opt1 = tf.train.MomentumOptimizer(learning_rate=args.learning_rate, momentum=0.9)
-            opt2 = tf.train.MomentumOptimizer(learning_rate=args.learning_rate*10, momentum=0.9)
-        else:
-            raise
-
-        grads = tf.gradients(total_loss, var1+var2)
-        grads1 = grads[:len(var1)]
-        grads2 = grads[len(var1):]
-        train_op1 = opt1.apply_gradients(zip(grads1, var1), global_step=global_step)
-        train_op2 = opt2.apply_gradients(zip(grads2, var2), global_step=global_step)
-        train_op = tf.group(train_op1, train_op2)
+        opt = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+        grads = tf.gradients(total_loss, train_var)
+        train_op = opt.apply_gradients(zip(grads, train_var), global_step=global_step)
 
     sess = tf.Session()
     init_op = tf.global_variables_initializer()
     sess.run(init_op)
-
-    restore_var = []
-    for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES):
-        to_restore = True
-        for r in ['M2Det', 'Adam', 'beta1_power', 'beta2_power', 'global_step', 'Momentum']:
-            if r in v.name: to_restore = False
-        if to_restore: restore_var.append(v)
-    saver = tf.train.Saver(restore_var)
-    saver.restore(sess, args.pretrained_model_path)
-    logger.info('Restoring pretrained model')
 
     if tf.train.get_checkpoint_state(args.model_dir):
         saver = tf.train.Saver()
@@ -80,7 +56,7 @@ def main(args):
     while True:
         x_batch, t_batch = databox.get(args.batch_size)
         _, loss_value = sess.run([train_op, total_loss], feed_dict={inputs: x_batch, y_true: t_batch})
-        step_value = sess.run(global_step) // 2
+        step_value = sess.run(global_step)
         logger.info('step: {}, loss: {}'.format(step_value, loss_value))
         if (step_value) % 10000 == 0:
             saver = tf.train.Saver()
@@ -91,11 +67,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--image_dir', required=True)
     parser.add_argument('--label_dir', required=True)
-    parser.add_argument('--model_dir', default='weights')
-    parser.add_argument('--pretrained_model_path', default='weights/pretrain')
+    parser.add_argument('--model_dir', default='weights/')
     parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--learning_rate', type=float, default=3e-4)
-    parser.add_argument('--optimizer', type=str, default='adam')
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--input_size', type=int, default=320)
     parser.add_argument('--num_boxes', type=int, default=8010) # 40*40*3+20*20*6+10*10*6+5*5*6+3*3*6+1*1*6=8010

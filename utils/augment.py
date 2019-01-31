@@ -1,8 +1,8 @@
 import numpy as np
 import cv2
 
-def vgg_imagenet_preprocessing(img):
-    img = img - [123.68, 116.78, 103.94] # RGB format
+def normalize(img):
+    img = (img - 127.5) / 128.0
     return img
 
 def random_crop(img, boxes, input_size, ratio=0.20):
@@ -49,5 +49,5 @@ def random_flip(img, boxes):
 def augment(img, boxes, input_size):
     img, boxes = random_crop(img, boxes, input_size)
     img, boxes = random_flip(img, boxes)
-    img = vgg_imagenet_preprocessing(img)
+    img = normalize(img)
     return img, boxes
