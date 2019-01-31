@@ -72,9 +72,3 @@ class M2Det:
                 all_cls = tf.nn.softmax(all_cls)
                 all_reg = tf.reshape(all_reg, [-1, num_boxes, 4])
                 self.prediction = tf.concat([all_reg, all_cls], axis=-1)
-
-if __name__ == '__main__':
-    inputs = tf.placeholder(tf.float32, [None, 320, 320, 3])
-    is_training = tf.constant(True)
-    num_classes = 80
-    m2det = M2Det(inputs, is_training, num_classes)
