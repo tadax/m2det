@@ -67,7 +67,7 @@ $ python train.py --image_dir <image_dir> --label_dir <label_dir>
 
 ## Note
 
-### ImageNet pre-training
+### With vs. without ImageNet pre-training
 
 ImaneNet pre-training is not used.
 
