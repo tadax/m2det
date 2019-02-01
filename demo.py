@@ -31,8 +31,6 @@ def draw(frame, results):
         cv2.putText(frame, name, (left, top + label_height - border_size), font, font_size, text_color, font_scale, line_type)
         print('{}: {} - left: {}, top: {}, right: {}, bottom: {}'.format(name, prob, left, top, right, bottom))
 
-    return frame
-
 def get_classes(index):
     obj = [v for k, v in table.mscoco2017.items()]
     sorted(obj, key=lambda x:x[0])
