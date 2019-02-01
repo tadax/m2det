@@ -50,9 +50,15 @@ class Detector:
         return decode_bbox
 
     def detect(self, img):
-        h, w = img.shape[:2]
-        inp = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        inp = cv2.resize(inp, (self.input_size, self.input_size))
+        img_h, img_w = img.shape[:2]
+        ratio = max(img_h, img_w) / self.input_size
+        new_h = int(img_h / ratio)
+        new_w = int(img_w / ratio)
+        scaled = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+        inp = np.zeros((self.input_size, self.input_size, 3), dtype=np.uint8)
+        inp[:new_h, :new_w, :] = scaled
+
+        inp = cv2.cvtColor(inp, cv2.COLOR_BGR2RGB)
         inp = (inp - 127.5) / 128.0
 
         # shape of y_pred: (?, num_boxes, 4 + num_classes)
@@ -72,10 +78,10 @@ class Detector:
             prob = np.max(pred)
             if prob < self.threshold:
                 continue
-            left = xmin * w
-            top = ymin * h
-            right = xmax * w
-            bottom = ymax * h
+            left = xmin * img_w * self.input_size / new_w
+            top = ymin * img_h * self.input_size / new_h
+            right = xmax * img_w * self.input_size / new_w
+            bottom = ymax * img_h * self.input_size / new_h
             boxes.append([clsid, prob, left, top, right, bottom])
 
         if len(boxes) > 0:
