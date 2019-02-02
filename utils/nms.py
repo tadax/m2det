@@ -13,7 +13,7 @@ def calc_iou(box1, box2):
     iou = intersection / union
     return iou
 
-def nms(boxes, iou_thr=0.2):
+def per_class_nms(boxes, iou_thr):
     '''
     boxes shape: [num_boxes, 6]
     second dimension: class, prob, left, top, right, bottom
@@ -42,3 +42,38 @@ def nms(boxes, iou_thr=0.2):
             probs = probs[mask]
 
     return results
+
+def standard_nms(boxes, iou_thr):
+    '''
+    boxes shape: [num_boxes, 6]
+    second dimension: class, prob, left, top, right, bottom
+    '''
+
+    boxes = np.array(boxes)
+    boxes = boxes[boxes[:, 1].argsort()[::-1]]
+    classes = boxes[:, 0]
+    probs = boxes[:, 1]
+    coords = boxes[:, 2:]
+
+    results = []
+    while len(coords) > 0:
+        cls = classes[0]
+        prob = probs[0]
+        coord = coords[0]
+        results.append((int(cls), prob, coord))
+        classes = classes[1:]
+        probs = probs[1:]
+        coords = coords[1:]
+        mask = np.array([calc_iou(coord, x) for x in coords]) < iou_thr
+        classes = classes[mask]
+        probs = probs[mask]
+        coords = coords[mask]
+
+    return results
+
+def soft_nms(boxes, iou_thr):
+    # To be implemented
+    return
+
+def nms(boxes, iou_thr=0.25):
+    return standard_nms(boxes, iou_thr)
