@@ -72,7 +72,7 @@ if __name__ == '__main__':
     parser.add_argument('--learning_rate', type=float, default=3e-4)
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--input_size', type=int, default=320)
-    parser.add_argument('--num_boxes', type=int, default=8010) # 40*40*3+20*20*6+10*10*6+5*5*6+3*3*6+1*1*6=8010
+    parser.add_argument('--num_boxes', type=int, default=32025) # (40x40+20x20+10x10+5x5+3x3+1x1)x3x5=32025
     parser.add_argument('--log_path', default='weights/out.log')
     parser.add_argument('--gpu', type=str, default='0', required=True)
     os.environ['CUDA_VISIBLE_DEVICES'] = parser.parse_args().gpu

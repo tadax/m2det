@@ -12,7 +12,7 @@ def encode_box(box, priors):
     iou = inter / union
 
     encoded_box = np.zeros((len(priors), 4))
-    assign_mask = iou > 0.5
+    assign_mask = iou >= 0.25
     encoded_box[:, -1][assign_mask] = iou[assign_mask]
     assigned_priors = priors[assign_mask]
     box_center = 0.5 * (box[:2] + box[2:])

@@ -6,7 +6,7 @@ import time
 import numpy as np
 
 from utils.assign_boxes import assign_boxes
-from utils.get_prior import get_priors
+from utils.generate_priors import generate_priors
 from utils.augment import augment
 
 class Data:
@@ -15,7 +15,7 @@ class Data:
         self.label_dir = label_dir
         self.num_classes = num_classes 
         self.input_size = input_size
-        self.priors = get_priors(input_size=self.input_size)
+        self.priors = generate_priors(image_size=self.input_size)
         self.size = self.get_size()
 
     def start(self):

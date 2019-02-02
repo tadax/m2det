@@ -4,10 +4,13 @@ from utils.layer import *
 
 class M2Det:
     def __init__(self, inputs, is_training, num_classes):
-        num_classes += 1 # for background class
-        self.build(inputs, is_training, num_classes)
+        self.num_classes = num_classes + 1 # for background class
+        self.levels = 8
+        self.scales = 6
+        self.num_priors = 15 # (num of scales * num of aspect ratios)
+        self.build(inputs, is_training)
 
-    def build(self, inputs, is_training, num_classes, levels=8, scales=6): 
+    def build(self, inputs, is_training):
         with tf.variable_scope('resnet_model'):
             net = inputs
             net = conv2d_layer(net, 64, 7, 2)
@@ -28,7 +31,7 @@ class M2Det:
                 base_feature = tf.concat([feature1, feature2], axis=3)
 
             outs = []
-            for i in range(levels):
+            for i in range(self.levels):
                 if i == 0:
                     net = conv2d_layer(base_feature, filters=256, kernel_size=1, strides=1)
                     net = tf.nn.relu(batch_norm(net, is_training))
@@ -38,37 +41,36 @@ class M2Det:
                         net = tf.nn.relu(batch_norm(net, is_training))
                         net = tf.concat([net, out[-1]], axis=3)
                 with tf.variable_scope('TUM{}'.format(i+1)):
-                    out = tum(net, is_training, scales)
+                    out = tum(net, is_training, self.scales)
                 outs.append(out)
 
             features = []
             with tf.variable_scope('SFAM'):
-                for i in range(scales):
-                    feature = tf.concat([outs[j][i] for j in range(levels)], axis=3)
+                for i in range(self.scales):
+                    feature = tf.concat([outs[j][i] for j in range(self.levels)], axis=3)
                     attention = tf.reduce_mean(feature, axis=[1, 2], keepdims=True)
                     attention = tf.layers.dense(inputs=feature, units=64, activation=tf.nn.sigmoid, name='fc1_{}'.format(i+1))
                     attention = tf.layers.dense(inputs=attention, units=1024, activation=tf.nn.relu, name='fc2_{}'.format(i+1))
                     feature = feature * attention
                     features.insert(0, feature)
 
-            num_priors = [3, 6, 6, 6, 6, 6]
             all_cls = []
             all_reg = []
             with tf.variable_scope('prediction'):
-                for i, (feature, num) in enumerate(zip(features, num_priors)):
+                for i, feature in enumerate(features):
                     print(i+1, feature.shape)
-                    cls = conv2d_layer(feature, num * num_classes, 3, 1)
+                    cls = conv2d_layer(feature, self.num_priors * self.num_classes, 3, 1)
                     cls = batch_norm(cls, is_training) # activation function is identity
                     cls = flatten_layer(cls)
                     all_cls.append(cls)
-                    reg = conv2d_layer(feature, num * 4, 3, 1)
+                    reg = conv2d_layer(feature, self.num_priors * 4, 3, 1)
                     reg = batch_norm(reg, is_training) # activation function is identity
                     reg = flatten_layer(reg)
                     all_reg.append(reg)
                 all_cls = tf.concat(all_cls, axis=1)
                 all_reg = tf.concat(all_reg, axis=1)
                 num_boxes = int(all_reg.shape[-1].value / 4)
-                all_cls = tf.reshape(all_cls, [-1, num_boxes, num_classes])
+                all_cls = tf.reshape(all_cls, [-1, num_boxes, self.num_classes])
                 all_cls = tf.nn.softmax(all_cls)
                 all_reg = tf.reshape(all_reg, [-1, num_boxes, 4])
                 self.prediction = tf.concat([all_reg, all_cls], axis=-1)
