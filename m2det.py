@@ -7,7 +7,7 @@ class M2Det:
         self.num_classes = num_classes + 1 # for background class
         self.levels = 8
         self.scales = 6
-        self.num_priors = 15 # (num of scales * num of aspect ratios)
+        self.num_priors = 9
         self.build(inputs, is_training)
 
     def build(self, inputs, is_training):
@@ -17,9 +17,9 @@ class M2Det:
             net = tf.layers.max_pooling2d(net, 3, 2, padding='SAME')
             net = block_layer(net, is_training, 64, 3, 1, 'block_layer1')
             net = block_layer(net, is_training, 128, 4, 2, 'block_layer2')
-            feature1 = net
+            feature1 = tf.nn.relu(batch_norm(net))
             net = block_layer(net, is_training, 256, 6, 2, 'block_layer3')
-            feature2 = net
+            feature2 = tf.nn.relu(batch_norm(net))
 
         with tf.variable_scope('M2Det'):
             with tf.variable_scope('FFMv1'):
