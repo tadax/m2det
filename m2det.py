@@ -17,9 +17,9 @@ class M2Det:
             net = tf.layers.max_pooling2d(net, 3, 2, padding='SAME')
             net = block_layer(net, is_training, 64, 3, 1, 'block_layer1')
             net = block_layer(net, is_training, 128, 4, 2, 'block_layer2')
-            feature1 = tf.nn.relu(batch_norm(net))
+            feature1 = tf.nn.relu(batch_norm(net, is_training))
             net = block_layer(net, is_training, 256, 6, 2, 'block_layer3')
-            feature2 = tf.nn.relu(batch_norm(net))
+            feature2 = tf.nn.relu(batch_norm(net, is_training))
 
         with tf.variable_scope('M2Det'):
             with tf.variable_scope('FFMv1'):
