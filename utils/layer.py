@@ -37,7 +37,7 @@ def bottleneck_block_v2(x, filters, is_training, strides, projection=False):
     x = conv2d_layer(x, filters * 4, 1, 1)
     return x + shortcut
 
-def block_layer(x, is_training, filters, num_blocks, strides, name):
+def block_layer(x, is_training, filters, num_blocks, strides):
     x = bottleneck_block_v2(x, filters, is_training, strides, projection=True)
     for _ in range(1, num_blocks):
         x = bottleneck_block_v2(x, filters, is_training, 1)

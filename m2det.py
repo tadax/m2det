@@ -15,10 +15,10 @@ class M2Det:
             net = inputs
             net = conv2d_layer(net, 64, 7, 2)
             net = tf.layers.max_pooling2d(net, 3, 2, padding='SAME')
-            net = block_layer(net, is_training, 64, 3, 1, 'block_layer1')
-            net = block_layer(net, is_training, 128, 4, 2, 'block_layer2')
+            net = block_layer(net, is_training, 64, 3, 1)
+            net = block_layer(net, is_training, 128, 4, 2)
             feature1 = tf.nn.relu(batch_norm(net, is_training))
-            net = block_layer(net, is_training, 256, 6, 2, 'block_layer3')
+            net = block_layer(net, is_training, 256, 6, 2)
             feature2 = tf.nn.relu(batch_norm(net, is_training))
 
         with tf.variable_scope('M2Det'):
@@ -27,7 +27,8 @@ class M2Det:
                 feature1 = tf.nn.relu(batch_norm(feature1, is_training))
                 feature2 = conv2d_layer(feature2, filters=512, kernel_size=1, strides=1)
                 feature2 = tf.nn.relu(batch_norm(feature2, is_training))
-                feature2 = tf.image.resize_images(feature2, tf.shape(feature1)[1:3], method=tf.image.ResizeMethod.BILINEAR)
+                feature2 = tf.image.resize_images(feature2, tf.shape(feature1)[1:3], 
+                                                  method=tf.image.ResizeMethod.BILINEAR)
                 base_feature = tf.concat([feature1, feature2], axis=3)
 
             outs = []
@@ -49,8 +50,10 @@ class M2Det:
                 for i in range(self.scales):
                     feature = tf.concat([outs[j][i] for j in range(self.levels)], axis=3)
                     attention = tf.reduce_mean(feature, axis=[1, 2], keepdims=True)
-                    attention = tf.layers.dense(inputs=feature, units=64, activation=tf.nn.sigmoid, name='fc1_{}'.format(i+1))
-                    attention = tf.layers.dense(inputs=attention, units=1024, activation=tf.nn.relu, name='fc2_{}'.format(i+1))
+                    attention = tf.layers.dense(inputs=feature, units=64, 
+                                                activation=tf.nn.sigmoid, name='fc1_{}'.format(i+1))
+                    attention = tf.layers.dense(inputs=attention, units=1024,
+                                                activation=tf.nn.relu, name='fc2_{}'.format(i+1))
                     feature = feature * attention
                     features.insert(0, feature)
 
