@@ -5,8 +5,8 @@ import multiprocessing
 import time
 import numpy as np
 
-from utils.assign_boxes import assign_boxes
 from utils.generate_priors import generate_priors
+from utils.assign_boxes import assign_boxes
 from utils.augment import augment
 
 class Data:

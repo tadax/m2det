@@ -7,7 +7,7 @@ import tensorflow as tf
 import argparse
 
 from m2det import M2Det
-from utils.get_prior import get_priors
+from utils.generate_priors import generate_priors
 from utils.nms import nms
 
 class Detector:
@@ -16,7 +16,7 @@ class Detector:
         self.input_size = input_size
         self.num_classes = num_classes
         self.threshold = threshold
-        self.priors = get_priors(input_size=self.input_size)
+        self.priors = generate_priors(image_size=self.input_size)
         self.build()
 
     def build(self):

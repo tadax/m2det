@@ -58,7 +58,7 @@ def main(args):
         _, loss_value = sess.run([train_op, total_loss], feed_dict={inputs: x_batch, y_true: t_batch})
         step_value = sess.run(global_step)
         logger.info('step: {}, loss: {}'.format(step_value, loss_value))
-        if (step_value) % 10000 == 0:
+        if (step_value) % 1000 == 0:
             saver = tf.train.Saver()
             dst = os.path.join(args.model_dir, 'variables')
             saver.save(sess, dst, write_meta_graph=False)
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     parser.add_argument('--learning_rate', type=float, default=3e-4)
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--input_size', type=int, default=320)
-    parser.add_argument('--num_boxes', type=int, default=32025) # (40x40+20x20+10x10+5x5+3x3+1x1)x3x5=32025
+    parser.add_argument('--num_boxes', type=int, default=19215) # (40x40+20x20+10x10+5x5+3x3+1x1)x9=19215
     parser.add_argument('--log_path', default='weights/out.log')
     parser.add_argument('--gpu', type=str, default='0', required=True)
     os.environ['CUDA_VISIBLE_DEVICES'] = parser.parse_args().gpu

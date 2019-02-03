@@ -1,11 +1,11 @@
 import numpy as np
 
-def generate_priors(image_size, num_scales=3, anchor_scale=2.0):
+def generate_priors(image_size, num_scales=3, anchor_scale=1.2):
     anchor_configs = {}
     for shape in [40, 20, 10, 5, 3, 1]:
         anchor_configs[shape] = []
         for scale_octave in range(num_scales):
-            for aspect_ratio in [(1, 1), (1.41, 0.71), (0.71, 1.41), (2.45, 0.41), (0.41, 2.45)]:
+            for aspect_ratio in [(1, 1), (1.41, 0.71), (0.71, 1.41)]:
                 anchor_configs[shape].append(
                     (image_size / shape, scale_octave / float(num_scales), aspect_ratio))
 
