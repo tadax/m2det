@@ -6,6 +6,13 @@ import tqdm
 import argparse
 
 from utils.detector import Detector
+from mscoco import table
+
+def get_classes(index):
+    obj = [v for k, v in table.mscoco2017.items()]
+    sorted(obj, key=lambda x:x[0])
+    classes = [j for i, j in obj]
+    return classes[index]
 
 def calc_iou(box1, box2):
     # box: left, top, right, bottom
@@ -37,6 +44,9 @@ def calc_precision(predict_labels, true_labels, clsid, prob_threshold, iou_thres
                 predict_assign[pred_idx] = None
                 continue
             pred_box = np.array([pred_xmin, pred_ymin, pred_xmax, pred_ymax])
+
+            max_iou = -1
+            max_idx = None
             for true_idx, true_el in enumerate(true_label):
                 if true_assign[true_idx]:
                     continue
@@ -51,10 +61,13 @@ def calc_precision(predict_labels, true_labels, clsid, prob_threshold, iou_thres
                     continue
                 true_box = np.array([true_xmin, true_ymin, true_xmax, true_ymax])
                 iou  = calc_iou(pred_box, true_box)
-                if iou >= iou_threshold:
-                    predict_assign[pred_idx] = True
-                    true_assign[true_idx] = True
-                    break
+                if iou >= iou_threshold and iou > max_iou:
+                    max_iou = iou
+                    max_idx = true_idx
+
+            if max_idx is not None:
+                predict_assign[pred_idx] = True
+                true_assign[max_idx] = True
 
         tp += sum([1 for e in predict_assign if e == True])
         fp += sum([1 for e in predict_assign if e == False])
@@ -112,9 +125,10 @@ def main(args):
 
     print('Eval size: {}'.format(len(predict_labels)))
 
-    APs = [[] for _ in range(10)]
-    for ix, iou_threshold in enumerate(np.arange(0.50, 0.96, 0.05)):
-        for clsid in range(args.num_classes):
+    APs = []
+    for clsid in range(args.num_classes):
+        APs.append([])
+        for iou_threshold in np.arange(0.50, 0.96, 0.05):
             precisions = []
             recalls = []
             for prob_threshold in np.arange(0.0, 1.01, 0.1):
@@ -142,16 +156,27 @@ def main(args):
                 maximum_precision[-jx-1] = v
                 
             AP = np.mean(maximum_precision)
-            APs[ix].append(AP)
+            APs[clsid].append(AP)
 
-    print('mAP@0.5: {}'.format(np.mean(APs[0])))
-    print('mAP@[0.5:0.95]: {}'.format(np.mean(APs)))
+    mAP50 = []
+    mAP5095 = []
+    for ix, AP in enumerate(APs):
+        if len(AP) == 0:
+            continue
+        name = get_classes(ix)
+        mAP50.append(AP[0])
+        mAP5095.append(np.mean(AP))
+        print('{} {}: {}'.format(ix, name, AP[0]*100))
+
+    print('----------')
+    print('mAP@0.5: {}'.format(np.mean(mAP50)*100))
+    print('mAP@[0.5:0.95]: {}'.format(np.mean(mAP5095)*100))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--image_dir', required=True)
     parser.add_argument('--label_dir', required=True)
-    parser.add_argument('--model_path', required=True)
+    parser.add_argument('--model_path', default='weights/variables')
     parser.add_argument('--input_size', type=int, default=320)
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--gpu', type=str, default='0')
