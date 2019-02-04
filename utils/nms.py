@@ -26,8 +26,6 @@ def nms(boxes, threshold, sigma=0.5):
     results = {}
     for cls in unique_classes:
         mask = classes == cls
-        if len(mask) == 0:
-            continue
         mask_boxes = (boxes[:, 1:])[mask]
         probs = mask_boxes[:, 0] # prob
         coords = mask_boxes[:, 1:] # left, top, right, bottom
@@ -35,8 +33,10 @@ def nms(boxes, threshold, sigma=0.5):
         mask = probs >= threshold
         coords = coords[mask]
         probs = probs[mask]
-
+        if len(coords) == 0:
+            continue
         results[cls] = []
+
         while len(coords) > 0:
             index = np.argmax(probs)
             coord = coords[index]
