@@ -6,7 +6,6 @@ import copy
 import argparse
 
 from utils.assign_boxes import assign_boxes
-from utils.get_prior import get_priors
 from utils.generate_priors import generate_priors
 from utils.nms import nms
 from mscoco import table
@@ -49,7 +48,6 @@ def decode_box(boxes, priors):
 
 def main(args):
     priors = generate_priors(args.image_size)
-    #priors = get_priors(args.image_size)
 
     paths = []
     for bb_path in glob.glob(os.path.join(args.label_dir, '*.txt')):
