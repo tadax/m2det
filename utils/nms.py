@@ -13,7 +13,7 @@ def calc_iou(box1, box2):
     iou = intersection / union
     return iou
 
-def per_class_nms(boxes, iou_thr):
+def nms(boxes, threshold, sigma=0.5):
     '''
     boxes shape: [num_boxes, 6]
     second dimension: class, prob, left, top, right, bottom
@@ -23,57 +23,34 @@ def per_class_nms(boxes, iou_thr):
     classes = boxes[:, 0]
     unique_classes = [int(i) for i in list(set(classes))]
 
-    results = []
+    results = {}
     for cls in unique_classes:
         mask = classes == cls
+        if len(mask) == 0:
+            continue
         mask_boxes = (boxes[:, 1:])[mask]
-        mask_boxes = mask_boxes[mask_boxes[:, 0].argsort()[::-1]] # sort by prob
         probs = mask_boxes[:, 0] # prob
         coords = mask_boxes[:, 1:] # left, top, right, bottom
 
+        mask = probs >= threshold
+        coords = coords[mask]
+        probs = probs[mask]
+
+        results[cls] = []
         while len(coords) > 0:
-            coord = coords[0]
-            prob = probs[0]
-            results.append((cls, prob, coord))
-            coords = coords[1:]
-            probs = probs[1:]
-            mask = np.array([calc_iou(coord, x) for x in coords]) < iou_thr
+            index = np.argmax(probs)
+            coord = coords[index]
+            prob = probs[index]
+            results[cls].append((prob, coord))
+            coords = np.delete(coords, index, axis=0)
+            probs = np.delete(probs, index, axis=0)
+
+            # soft-nms with a Gaussian penalty function
+            ious = [calc_iou(coord, c) for c in coords]
+            penalty = np.array([np.e ** (-iou ** 2 / sigma) for iou in ious])
+            probs = probs * penalty
+            mask = probs >= threshold
             coords = coords[mask]
             probs = probs[mask]
 
     return results
-
-def standard_nms(boxes, iou_thr):
-    '''
-    boxes shape: [num_boxes, 6]
-    second dimension: class, prob, left, top, right, bottom
-    '''
-
-    boxes = np.array(boxes)
-    boxes = boxes[boxes[:, 1].argsort()[::-1]]
-    classes = boxes[:, 0]
-    probs = boxes[:, 1]
-    coords = boxes[:, 2:]
-
-    results = []
-    while len(coords) > 0:
-        cls = classes[0]
-        prob = probs[0]
-        coord = coords[0]
-        results.append((int(cls), prob, coord))
-        classes = classes[1:]
-        probs = probs[1:]
-        coords = coords[1:]
-        mask = np.array([calc_iou(coord, x) for x in coords]) < iou_thr
-        classes = classes[mask]
-        probs = probs[mask]
-        coords = coords[mask]
-
-    return results
-
-def soft_nms(boxes, iou_thr):
-    # To be implemented
-    return
-
-def nms(boxes, iou_thr=0.25):
-    return standard_nms(boxes, iou_thr)

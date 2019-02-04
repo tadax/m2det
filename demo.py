@@ -16,20 +16,21 @@ def draw(frame, results):
     base_border_size = 4
     base_font_size = 0.8
     base_font_scale = 1
-    ratio = max(frame.shape[:2]) / 640
+    ratio = max(frame.shape[:2]) / 960
     border_size = int(base_border_size * ratio)
     font_size = float(base_font_size * ratio)
     font_scale = int(base_font_scale * ratio)
 
-    for result in results:
-        cls, prob, coord = result
-        left, top, right, bottom = [int(i) for i in coord]
-        name, color = get_classes(cls)
-        cv2.rectangle(frame, (left, top), (right, bottom), color, border_size)
-        (label_width, label_height), baseline = cv2.getTextSize(name, font, font_size, font_scale)
-        cv2.rectangle(frame, (left, top), (left + label_width, top + label_height), color, -1)
-        cv2.putText(frame, name, (left, top + label_height - border_size), font, font_size, text_color, font_scale, line_type)
-        print('{}: {} - left: {}, top: {}, right: {}, bottom: {}'.format(name, prob, left, top, right, bottom))
+    for cls, result in results.items():
+        for prob, coord in result:
+            name, color = get_classes(cls)
+            data = '{}: {}'.format(name, round(prob, 3))
+            left, top, right, bottom = [int(i) for i in coord]
+            cv2.rectangle(frame, (left, top), (right, bottom), color, border_size)
+            (label_width, label_height), baseline = cv2.getTextSize(data, font, font_size, font_scale)
+            cv2.rectangle(frame, (left, top), (left + label_width, top + label_height), color, -1)
+            cv2.putText(frame, data, (left, top + label_height - border_size), font, font_size, text_color, font_scale, line_type)
+            #print('{}: {} - left: {}, top: {}, right: {}, bottom: {}'.format(name, prob, left, top, right, bottom))
 
 def get_classes(index):
     obj = [v for k, v in table.mscoco2017.items()]
@@ -55,6 +56,14 @@ def main(args):
             draw(img, results)
             cv2.imshow('', img)
             cv2.waitKey(1)
+    elif os.path.isdir(args.inputs):
+        paths = glob.glob(os.path.join(args.inputs, '*'))
+        for path in paths:
+            img = cv2.imread(path)
+            results = det.detect(img)
+            draw(img, results)
+            cv2.imshow('', img)
+            cv2.waitKey(0)
     else:
         img = cv2.imread(args.inputs)
         results = det.detect(img)

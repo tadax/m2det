@@ -76,8 +76,10 @@ class Detector:
                 continue
             clsid -= 1 # decrement to skip background class
             prob = np.max(pred)
+            '''
             if prob < self.threshold:
                 continue
+            '''
             left = xmin * img_w * self.input_size / new_w
             top = ymin * img_h * self.input_size / new_h
             right = xmax * img_w * self.input_size / new_w
@@ -85,6 +87,6 @@ class Detector:
             boxes.append([clsid, prob, left, top, right, bottom])
 
         if len(boxes) > 0:
-            return nms(boxes)
+            return nms(boxes, self.threshold)
         else:
             return {}
