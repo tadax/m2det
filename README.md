@@ -34,7 +34,7 @@ To be released.
 
 ~~You can download the trained model [[weights_2019-01-31]()].~~
 
-To be released.
+To be released before long.
 
 ### Run Demo
 
@@ -50,10 +50,7 @@ Download COCO (2017) dataset from [http://cocodataset.org](http://cocodataset.or
 and process them:
 
 ```
-$ python mscoco/process.py \
---image_dir <image_dir> \
---annotation_path <annotation_dir> \
---output_dir <output_dir>
+$ python mscoco/process.py --image_dir <image_dir> --annotation_path <annotation_dir> --output_dir <output_dir>
 ```
 
 #### II. Train model
