@@ -2,27 +2,32 @@ import os
 import glob
 import cv2
 import numpy as np
-import copy
 import argparse
 
 from utils.assign_boxes import assign_boxes
 from utils.generate_priors import generate_priors
-from utils.nms import nms
+from utils.nms import naive_nms
+from utils.augment import augment
 from mscoco import table
 
+obj = [v for k, v in table.mscoco2017.items()]
+sorted(obj, key=lambda x:x[0])
+classes = [j for i, j in obj]
+colors = np.random.randint(0, 224, size=(len(classes), 3))
+font = cv2.FONT_HERSHEY_SIMPLEX
+line_type = cv2.LINE_AA
+text_color = (255, 255, 255)
+border_size = 3
+font_size = 0.4
+font_scale = 1
+
 def draw(img, clsid, left, top, right, bottom):
-    obj = [v for k, v in table.mscoco2017.items()]
-    sorted(obj, key=lambda x:x[0])
-    classes = [j for i, j in obj]
-    np.random.seed(420)
-    colors = np.random.randint(0, 224, size=(len(classes), 3))
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    line_type = cv2.LINE_AA
-    text_color = (255, 255, 255)
-    border_size = 2
     name = classes[clsid]
     color = tuple(colors[clsid].tolist())
     cv2.rectangle(img, (left, top), (right, bottom), color, border_size)
+    (label_width, label_height), baseline = cv2.getTextSize(name, font, font_size, font_scale)
+    cv2.rectangle(img, (left, top), (left + label_width, top + label_height), color, -1)
+    cv2.putText(img, name, (left, top + label_height - border_size), font, font_size, text_color, font_scale, line_type)
 
 def decode_box(boxes, priors):
     prior_width = priors[:, 2] - priors[:, 0]
@@ -69,20 +74,21 @@ def main(args):
             label = [float(xmin), float(ymin), float(xmax), float(ymax)] + onehot_label.tolist()
             labels.append(label)
             
-        img0 = copy.deepcopy(img)
+        img0 = cv2.resize(img, (args.image_size, args.image_size))
 
         for label in labels:
-            xmin, ymin, xmax, ymax = label[:4]
+            xmin, ymin, xmax, ymax = [int(float(f) * args.image_size) for f in label[:4]]
             ix = np.argmax(label[4:])
             clsid = int(ix)
-            left = int(float(xmin) * img_w)
-            top = int(float(ymin) * img_h)
-            right = int(float(xmax) * img_w)
-            bottom = int(float(ymax) * img_h)
-            draw(img0, clsid, left, top, right, bottom)
+            draw(img0, clsid, xmin, ymin, xmax, ymax)
+
+        if args.augmentation:
+            img, labels = augment(img, labels, args.image_size)
+            img = np.array(img * 128.0 + 127.5, dtype=np.uint8)
+        else:
+            img = cv2.resize(img, (args.image_size, args.image_size))
 
         labels = np.array(labels)
-
         y_true = assign_boxes(labels, priors, args.num_classes)
         preds = y_true[:, 4:-1]
         boxes = y_true[:, :4]
@@ -91,27 +97,23 @@ def main(args):
 
         boxes = []
         for box, pred in zip(decode_bbox, preds):
-            xmin, ymin, xmax, ymax = box
+            xmin, ymin, xmax, ymax = [int(f * args.image_size) for f in box]
             clsid = np.argmax(pred)
             if clsid == 0:
                 # in the case of background
                 continue
             clsid -= 1 # decrement to skip background class
-            left = int(xmin * img_w)
-            top = int(ymin * img_h)
-            right = int(xmax * img_w)
-            bottom = int(ymax * img_h)
-            boxes.append([clsid, 1.0, left, top, right, bottom])
+            boxes.append([clsid, 1.0, xmin, ymin, xmax, ymax])
 
         if len(boxes) > 0:
-            boxes = nms(boxes, iou_thr=0.75)
+            boxes = naive_nms(boxes, threshold=0., iou_threshold=0.8)
 
-        for box in boxes:
-            clsid = box[0]
-            left, top, right, bottom = [int(i) for i in box[2]]
-            draw(img, clsid, left, top, right, bottom)
+        for clsid, box in boxes.items():
+            for _, coord in box:
+                left, top, right, bottom = [int(i) for i in coord]
+                draw(img, clsid, left, top, right, bottom)
 
-        print(len(labels), len(boxes))
+        print(len(labels), sum([len(j) for i, j in boxes.items()]))
         out = np.concatenate((img0, img), axis=1)
         cv2.imshow('', out)
         cv2.waitKey(0)
@@ -122,4 +124,5 @@ if __name__ == '__main__':
     parser.add_argument('--label_dir', required=True)
     parser.add_argument('--image_size', type=int, default=320)
     parser.add_argument('--num_classes', type=int, default=80)
+    parser.add_argument('--augmentation', action='store_true', default=False)
     main(parser.parse_args())

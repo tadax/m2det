@@ -22,15 +22,22 @@ def main(args):
     dataset_size = databox.size
     logger.info('Dataset size: {}'.format(dataset_size))
 
+    if args.input_size == 320:
+        # (40x40+20x20+10x10+5x5+3x3+1x1)x9=19215
+        num_boxes = 19215
+    elif args.input_size == 640:
+        # (80x80+40x40+20x20+10x10+5x5+3x3)x9=76806
+        num_boxes = 76806
+
     '''
-    y_true_size = 4 + (num_classes + 1) + 1:
+    y_true_size = num_classes + 6
     * 4 => bbox coordinates (x1, y1, x2, y2);
     * num_classes + 1 => including a background class;
     * 1 => denotes if the prior box was matched to some gt boxes or not;
     '''
-    y_true_size = 4 + args.num_classes + 1 + 1
+    y_true_size = args.num_classes + 6
     inputs = tf.placeholder(tf.float32, [None, args.input_size, args.input_size, 3])
-    y_true = tf.placeholder(tf.float32, [None, args.num_boxes, y_true_size])
+    y_true = tf.placeholder(tf.float32, [None, num_boxes, y_true_size])
     is_training = tf.constant(True)
     net = M2Det(inputs, is_training, args.num_classes)
     y_pred = net.prediction
@@ -68,12 +75,11 @@ if __name__ == '__main__':
     parser.add_argument('--image_dir', required=True)
     parser.add_argument('--label_dir', required=True)
     parser.add_argument('--model_dir', default='weights/')
+    parser.add_argument('--log_path', default='weights/out.log')
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--learning_rate', type=float, default=3e-4)
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--input_size', type=int, default=320)
-    parser.add_argument('--num_boxes', type=int, default=19215) # (40x40+20x20+10x10+5x5+3x3+1x1)x9=19215
-    parser.add_argument('--log_path', default='weights/out.log')
-    parser.add_argument('--gpu', type=str, default='0', required=True)
+    parser.add_argument('--gpu', type=str, default='0')
     os.environ['CUDA_VISIBLE_DEVICES'] = parser.parse_args().gpu
     main(parser.parse_args())

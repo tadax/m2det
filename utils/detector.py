@@ -49,25 +49,24 @@ class Detector:
         decode_bbox = np.minimum(np.maximum(decode_bbox, 0.0), 1.0)
         return decode_bbox
 
+    def preprocess(self, img):
+        img = cv2.resize(img, (self.input_size, self.input_size), interpolation=cv2.INTER_CUBIC)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = (img - 127.5) / 128.0
+        return img
+
     def detect(self, img):
         img_h, img_w = img.shape[:2]
-        ratio = max(img_h, img_w) / self.input_size
-        new_h = int(img_h / ratio)
-        new_w = int(img_w / ratio)
-        scaled = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
-        inp = np.zeros((self.input_size, self.input_size, 3), dtype=np.uint8)
-        inp[:new_h, :new_w, :] = scaled
+        img = self.preprocess(img)
 
-        inp = cv2.cvtColor(inp, cv2.COLOR_BGR2RGB)
-        inp = (inp - 127.5) / 128.0
+        outs = self.sess.run(self.net.prediction, feed_dict={self.inputs: np.array([img])})[0]
 
         # shape of y_pred: (?, num_boxes, 4 + num_classes)
-        outs = self.sess.run(self.net.prediction, feed_dict={self.inputs: np.array([inp])})[0]
         boxes = outs[:, :4]
         preds = outs[:, 4:]
         decoded_boxes = self.decode_boxes(boxes)
 
-        boxes = []
+        results = []
         for box, pred in zip(decoded_boxes, preds):
             xmin, ymin, xmax, ymax = box
             clsid = np.argmax(pred)
@@ -76,17 +75,13 @@ class Detector:
                 continue
             clsid -= 1 # decrement to skip background class
             prob = np.max(pred)
-            '''
-            if prob < self.threshold:
-                continue
-            '''
-            left = xmin * img_w * self.input_size / new_w
-            top = ymin * img_h * self.input_size / new_h
-            right = xmax * img_w * self.input_size / new_w
-            bottom = ymax * img_h * self.input_size / new_h
-            boxes.append([clsid, prob, left, top, right, bottom])
+            left = xmin * img_w
+            top = ymin * img_h
+            right = xmax * img_w
+            bottom = ymax * img_h
+            results.append([clsid, prob, left, top, right, bottom])
 
-        if len(boxes) > 0:
-            return nms(boxes, self.threshold)
+        if len(results) > 0:
+            return nms(results, self.threshold)
         else:
             return {}

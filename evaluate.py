@@ -111,19 +111,20 @@ def main(args):
         img = cv2.imread(img_path)
         h_img, w_img = img.shape[:2]
         results = det.detect(img)
-        results = sorted(results, key=lambda x:x[0], reverse=True)
-        predict_label = []
-        for result in results:
-            cls, prob, coord = result
-            xmin, ymin, xmax, ymax = [int(i) for i in coord]
-            xmin /= w_img
-            ymin /= h_img
-            xmax /= w_img
-            ymax /= h_img
-            predict_label.append([prob, cls, xmin, ymin, xmax, ymax])
+        
+        label = []
+        for cls, result in results:
+            result = sorted(results, key=lambda x:x[0], reverse=True)
+            for prob, coord in result:
+                xmin, ymin, xmax, ymax = [int(i) for i in coord]
+                xmin /= w_img
+                ymin /= h_img
+                xmax /= w_img
+                ymax /= h_img
+                label.append([prob, cls, xmin, ymin, xmax, ymax])
         predict_labels.append(predict_label)
 
-    print('Eval size: {}'.format(len(predict_labels)))
+    print('data size: {}'.format(len(predict_labels)))
 
     APs = []
     for clsid in range(args.num_classes):
@@ -176,7 +177,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--image_dir', required=True)
     parser.add_argument('--label_dir', required=True)
-    parser.add_argument('--model_path', default='weights/variables')
+    parser.add_argument('--model_path', required=True)
     parser.add_argument('--input_size', type=int, default=320)
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--gpu', type=str, default='0')

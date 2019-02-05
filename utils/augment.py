@@ -6,6 +6,9 @@ def normalize(img):
     return img
 
 def random_crop(img, boxes):
+    if np.random.uniform() > 0.5:
+        return img, boxes
+
     x1, x2, y1, y2 = np.random.uniform(low=0.0, high=0.20, size=4)
     img_h, img_w = img.shape[:2]
 
@@ -44,23 +47,43 @@ def random_flip(img, boxes):
 
     return img, flipped_boxes
 
-def scale(img, boxes, input_size):
+def down_sample(img):
     img_h, img_w = img.shape[:2]
-    ratio = max(img_h, img_w) / input_size
-    new_h = int(img_h / ratio)
-    new_w = int(img_w / ratio)
+    k = max(int(np.random.normal(loc=2.0)), 1)
+    if k > 1:
+        img = cv2.resize(img, (int(img_w / k), int(img_h / k)), interpolation=cv2.INTER_CUBIC)
+        img = cv2.resize(img, (img_w, img_h), interpolation=cv2.INTER_CUBIC)
+    return img
 
-    scaled = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
-    out = np.zeros((input_size, input_size, 3), dtype=np.uint8)
-    out[:new_h, :new_w, :] = scaled
+def resize(img, input_size):
+    scaled = cv2.resize(img, (input_size, input_size), interpolation=cv2.INTER_CUBIC)
+    return scaled
+
+def multi_scale(img, boxes):
+    if np.random.uniform() > 0.5:
+        return img, boxes
+
+    img_h, img_w = img.shape[:2]
+    margin_left = int(min(max(np.random.normal(), 0.0), 0.5) * img_w)
+    margin_right = int(min(max(np.random.normal(), 0.0), 0.5) * img_w)
+    margin_top = int(min(max(np.random.normal(loc=0.1), 0.0), 0.5) * img_h)
+    margin_bottom = int(min(max(np.random.normal(loc=0.1), 0.0), 0.5) * img_h)
+    new_w = img_w + margin_left + margin_right
+    new_h = img_h + margin_top + margin_bottom
+    x1 = margin_left
+    x2 = margin_left + img_w
+    y1 = margin_top
+    y2 = margin_top + img_h
+    out = np.zeros((new_h, new_w, 3), dtype=np.uint8)
+    out[y1:y2, x1:x2, :] = img
 
     scaled_boxes = []
     for box in boxes:
         xmin, ymin, xmax, ymax = box[:4]
-        xmin = (new_w / input_size) * xmin
-        ymin = (new_h / input_size) * ymin
-        xmax = (new_w / input_size) * xmax
-        ymax = (new_h / input_size) * ymax
+        xmin = ((margin_left + xmin * img_w) / new_w)
+        xmax = ((margin_left + xmax * img_w) / new_w)
+        ymin = ((margin_top + ymin * img_h) / new_h)
+        ymax = ((margin_top + ymax * img_h) / new_h)
         box = [xmin, ymin, xmax, ymax] + box[4:]
         scaled_boxes.append(box)
 
@@ -69,6 +92,8 @@ def scale(img, boxes, input_size):
 def augment(img, boxes, input_size):
     img, boxes = random_crop(img, boxes)
     img, boxes = random_flip(img, boxes)
-    img, boxes = scale(img, boxes, input_size)
+    img, boxes = multi_scale(img, boxes)
+    img = resize(img, input_size)
+    img = down_sample(img)
     img = normalize(img)
     return img, boxes

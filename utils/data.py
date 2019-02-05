@@ -40,14 +40,12 @@ class Data:
         while True:
             if len(paths) == 0:
                 paths = self.get_paths()
-        
             if q.qsize() >= queue_max_size:
                 time.sleep(0.1)
                 continue
 
             ix = np.random.randint(0, len(paths))
             path = paths.pop(ix)
-
             im_path, bb_path = path
             npimg = np.fromfile(im_path, dtype=np.uint8)
             img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
@@ -68,7 +66,6 @@ class Data:
             if len(boxes) == 0:
                 continue
             boxes = np.array(boxes)
-
             assignment = assign_boxes(boxes, self.priors, self.num_classes)
             q.put([img, assignment])
             
