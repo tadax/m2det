@@ -74,7 +74,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--inputs', required=True)
-    parser.add_argument('--model_path', required=True)
+    parser.add_argument('--model_path', default='weights/variables')
     parser.add_argument('--input_size', type=int, default=320)
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--threshold', type=float, default=0.60)
