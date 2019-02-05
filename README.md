@@ -1,3 +1,5 @@
+# :construction: Work in Progress :construction:
+
 # M2Det
 
 An implementation of
@@ -30,7 +32,9 @@ To be released.
 
 :warning: Notice: it's work in progress.
 
-You can download the trained model [[weights_2019-01-31](https://dl.dropboxusercontent.com/s/1lige7lokxsu4tn/weights_2019-01-31.tar.gz?dl=0)].
+~~You can download the trained model [[weights_2019-01-31]()].~~
+
+To be released.
 
 ### Run Demo
 
@@ -52,16 +56,10 @@ $ python mscoco/process.py \
 --output_dir <output_dir>
 ```
 
-#### II. Download pretrained model
+#### II. Train model
 
 ```
-$ cd weights/
-$ bash download.sh
-```
-
-#### III. Train model
-
-```
+$ mkdir weights
 $ python train.py --image_dir <image_dir> --label_dir <label_dir>
 ```
 
@@ -71,7 +69,8 @@ $ python train.py --image_dir <image_dir> --label_dir <label_dir>
 
 ImaneNet pre-training is not used.
 
-cf. [Kaiming He et al., "Rethinking ImageNet Pre-training", 2018](https://arxiv.org/pdf/1811.08883.pdf)
+cf. [_Kaiming He et al., "Rethinking ImageNet Pre-training", 2018_](
+https://arxiv.org/pdf/1811.08883.pdf)
 
 
 ### Learning rate scheduling
