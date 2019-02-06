@@ -52,6 +52,7 @@ def decode_box(boxes, priors):
     return decode_bbox
 
 def main(args):
+    num_classes = 100 # dummpy
     priors = generate_priors(args.image_size)
 
     paths = []
@@ -70,7 +71,7 @@ def main(args):
         labels = []
         for line in lines:
             ix, xmin, ymin, xmax, ymax = line.split('\t') 
-            onehot_label = np.eye(args.num_classes)[int(ix)]
+            onehot_label = np.eye(num_classes)[int(ix)]
             label = [float(xmin), float(ymin), float(xmax), float(ymax)] + onehot_label.tolist()
             labels.append(label)
             
@@ -84,12 +85,14 @@ def main(args):
 
         if args.augmentation:
             img, labels = augment(img, labels, args.image_size)
+            if len(labels) == 0:
+                continue
             img = np.array(img * 128.0 + 127.5, dtype=np.uint8)
         else:
             img = cv2.resize(img, (args.image_size, args.image_size))
 
         labels = np.array(labels)
-        y_true = assign_boxes(labels, priors, args.num_classes)
+        y_true = assign_boxes(labels, priors, num_classes)
         preds = y_true[:, 4:-1]
         boxes = y_true[:, :4]
 
@@ -108,12 +111,16 @@ def main(args):
         if len(boxes) > 0:
             boxes = naive_nms(boxes, threshold=0., iou_threshold=0.8)
 
-        for clsid, box in boxes.items():
-            for _, coord in box:
-                left, top, right, bottom = [int(i) for i in coord]
-                draw(img, clsid, left, top, right, bottom)
+            for clsid, box in boxes.items():
+                for _, coord in box:
+                    left, top, right, bottom = [int(i) for i in coord]
+                    draw(img, clsid, left, top, right, bottom)
 
-        print(len(labels), sum([len(j) for i, j in boxes.items()]))
+            print(len(labels), sum([len(j) for i, j in boxes.items()]))
+
+        else:
+            print(len(labels), 0)
+
         out = np.concatenate((img0, img), axis=1)
         cv2.imshow('', out)
         cv2.waitKey(0)
@@ -123,6 +130,5 @@ if __name__ == '__main__':
     parser.add_argument('--image_dir', required=True)
     parser.add_argument('--label_dir', required=True)
     parser.add_argument('--image_size', type=int, default=320)
-    parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--augmentation', action='store_true', default=False)
     main(parser.parse_args())
