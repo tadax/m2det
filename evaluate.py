@@ -113,8 +113,8 @@ def main(args):
         results = det.detect(img)
         
         label = []
-        for cls, result in results:
-            result = sorted(results, key=lambda x:x[0], reverse=True)
+        for cls, result in results.items():
+            result = sorted(result, key=lambda x:x[0], reverse=True)
             for prob, coord in result:
                 xmin, ymin, xmax, ymax = [int(i) for i in coord]
                 xmin /= w_img
@@ -122,7 +122,7 @@ def main(args):
                 xmax /= w_img
                 ymax /= h_img
                 label.append([prob, cls, xmin, ymin, xmax, ymax])
-        predict_labels.append(predict_label)
+        predict_labels.append(label)
 
     print('data size: {}'.format(len(predict_labels)))
 
