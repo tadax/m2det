@@ -11,15 +11,27 @@ class M2Det:
         self.build(inputs, is_training)
 
     def build(self, inputs, is_training):
+        '''
         with tf.variable_scope('resnet_model'):
             net = inputs
             net = conv2d_layer(net, 64, 7, 2)
-            net = tf.layers.max_pooling2d(net, 3, 2, padding='SAME')
+            #net = tf.layers.max_pooling2d(net, 3, 2, padding='SAME')
             net = block_layer(net, is_training, 64, 3, 1)
             net = block_layer(net, is_training, 128, 4, 2)
-            feature1 = tf.nn.relu(batch_norm(net, is_training))
             net = block_layer(net, is_training, 256, 6, 2)
+            feature1 = tf.nn.relu(batch_norm(net, is_training))
+            net = block_layer(net, is_training, 256, 3, 2)
             feature2 = tf.nn.relu(batch_norm(net, is_training))
+        '''
+        with tf.variable_scope('VGG16'):
+            net = inputs
+            net = vgg_layer(net, is_training, 64, 2, without_pooling=True)
+            net = vgg_layer(net, is_training, 128, 2)
+            net = vgg_layer(net, is_training, 256, 3)
+            net = vgg_layer(net, is_training, 512, 3)
+            feature1 = net
+            net = vgg_layer(net, is_training, 1024, 3)
+            feature2 = net
 
         with tf.variable_scope('M2Det'):
             with tf.variable_scope('FFMv1'):
@@ -77,3 +89,10 @@ class M2Det:
                 all_cls = tf.nn.softmax(all_cls)
                 all_reg = tf.reshape(all_reg, [-1, num_boxes, 4])
                 self.prediction = tf.concat([all_reg, all_cls], axis=-1)
+
+
+if __name__ == '__main__':
+    inputs = tf.placeholder(tf.float32, [None, 320, 320, 3])
+    is_training = tf.constant(False)
+    num_classes = 80
+    m2det = M2Det(inputs, is_training, num_classes)

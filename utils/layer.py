@@ -43,6 +43,14 @@ def block_layer(x, is_training, filters, num_blocks, strides):
         x = bottleneck_block_v2(x, filters, is_training, 1)
     return x
 
+def vgg_layer(x, is_training, filters, num_blocks, without_pooling=False):
+    for _ in range(num_blocks):
+        x = conv2d_layer(x, filters, 3, 1)
+        x = tf.nn.relu(batch_norm(x, is_training))
+    if not without_pooling:
+        x = tf.layers.max_pooling2d(x, 2, 2, padding='VALID')
+    return x 
+
 def flatten_layer(x):
     sh = x.shape
     x = tf.reshape(x, [-1, sh[1] * sh[2] * sh[3]])
