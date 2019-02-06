@@ -15,8 +15,8 @@ def draw(frame, results):
     text_color = (255, 255, 255)
     base_border_size = 4
     base_font_size = 0.8
-    base_font_scale = 1
-    ratio = max(frame.shape[:2]) / 1200
+    base_font_scale = 2
+    ratio = max(frame.shape[:2]) / 1000
     border_size = int(base_border_size * ratio)
     font_size = float(base_font_size * ratio)
     font_scale = int(base_font_scale * ratio)
