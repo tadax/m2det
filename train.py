@@ -22,23 +22,17 @@ def main(args):
     dataset_size = databox.size
     logger.info('Dataset size: {}'.format(dataset_size))
 
-    if args.input_size == 320:
-        # (40x40 + 20x20 + 10x10 + 5x5 + 3x3 + 1x1) x 9 = 19215
-        num_boxes = 19215
-    else:
-        raise
-
     '''
-    y_true_size = num_classes + 6
+    y_true_size = 4 + num_classes + 1 + 1 = num_classes + 6
     * 4 => bbox coordinates (x1, y1, x2, y2);
     * num_classes + 1 => including a background class;
     * 1 => denotes if the prior box was matched to some gt boxes or not;
     '''
     y_true_size = args.num_classes + 6
     inputs = tf.placeholder(tf.float32, [None, args.input_size, args.input_size, 3])
-    y_true = tf.placeholder(tf.float32, [None, num_boxes, y_true_size])
+    y_true = tf.placeholder(tf.float32, [None, args.num_boxes, y_true_size])
     is_training = tf.constant(True)
-    net = M2Det(inputs, is_training, args.num_classes)
+    net = M2Det(inputs, is_training, args.num_classes, args.model)
     y_pred = net.prediction
     total_loss = calc_loss(y_true, y_pred)
 
@@ -64,7 +58,7 @@ def main(args):
         _, loss_value = sess.run([train_op, total_loss], feed_dict={inputs: x_batch, y_true: t_batch})
         step_value = sess.run(global_step)
         logger.info('step: {}, loss: {}'.format(step_value, loss_value))
-        if (step_value) % 10000 == 0:
+        if (step_value) % 1000 == 0:
             saver = tf.train.Saver()
             dst = os.path.join(args.model_dir, 'variables')
             saver.save(sess, dst, write_meta_graph=False)
@@ -79,6 +73,8 @@ if __name__ == '__main__':
     parser.add_argument('--learning_rate', type=float, default=3e-4)
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--input_size', type=int, default=320)
+    parser.add_argument('--num_boxes', type=int, default=19215) # (40x40+20x20+10x10+5x5+3x3+1x1)x9=19215
     parser.add_argument('--gpu', type=str, default='0')
+    parser.add_argument('--model', type=str, default='vgg')
     os.environ['CUDA_VISIBLE_DEVICES'] = parser.parse_args().gpu
     main(parser.parse_args())

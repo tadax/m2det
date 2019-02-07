@@ -11,17 +11,18 @@ from utils.generate_priors import generate_priors
 from utils.nms import nms
 
 class Detector:
-    def __init__(self, model_path, input_size, num_classes, threshold):
+    def __init__(self, model_path, input_size, num_classes, threshold, model):
         self.model_path = model_path
         self.input_size = input_size
         self.num_classes = num_classes
         self.threshold = threshold
+        self.model = model
         self.priors = generate_priors(image_size=self.input_size)
         self.build()
 
     def build(self):
         self.inputs = tf.placeholder(tf.float32, [None, self.input_size, self.input_size, 3])
-        self.net = M2Det(self.inputs, tf.constant(False), self.num_classes)
+        self.net = M2Det(self.inputs, tf.constant(False), self.num_classes, self.model)
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()

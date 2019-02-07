@@ -45,7 +45,8 @@ def main(args):
         model_path=args.model_path, 
         input_size=args.input_size, 
         num_classes=args.num_classes, 
-        threshold=args.threshold)
+        threshold=args.threshold,
+        model=args.model)
 
     if args.inputs.endswith('.mp4'):
         cap = cv2.VideoCapture(args.inputs)
@@ -79,5 +80,6 @@ if __name__ == '__main__':
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--threshold', type=float, default=0.60)
     parser.add_argument('--gpu', type=str, default='0')
+    parser.add_argument('--model', type=str, default='vgg')
     os.environ['CUDA_VISIBLE_DEVICES'] = parser.parse_args().gpu
     main(parser.parse_args())
