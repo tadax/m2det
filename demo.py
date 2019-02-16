@@ -22,12 +22,13 @@ def draw(frame, results):
     font_scale = int(base_font_scale * ratio)
 
     for cls, result in results.items():
+        result = result[::-1]
         for prob, coord in result:
             name, color = get_classes(cls)
             data = '{}: {}'.format(name, round(prob, 3))
             left, top, right, bottom = [int(i) for i in coord]
-            cv2.rectangle(frame, (left, top), (right, bottom), color, border_size)
             (label_width, label_height), baseline = cv2.getTextSize(data, font, font_size, font_scale)
+            cv2.rectangle(frame, (left, top), (right, bottom), color, border_size)
             cv2.rectangle(frame, (left, top), (left + label_width, top + label_height), color, -1)
             cv2.putText(frame, data, (left, top + label_height - border_size), font, font_size, text_color, font_scale, line_type)
             #print('{}: {} - left: {}, top: {}, right: {}, bottom: {}'.format(name, prob, left, top, right, bottom))
