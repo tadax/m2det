@@ -32,7 +32,7 @@ def main(args):
     inputs = tf.placeholder(tf.float32, [None, args.input_size, args.input_size, 3])
     y_true = tf.placeholder(tf.float32, [None, args.num_boxes, y_true_size])
     is_training = tf.constant(True)
-    net = M2Det(inputs, is_training, args.num_classes, args.model)
+    net = M2Det(inputs, is_training, args.num_classes)
     y_pred = net.prediction
     total_loss = calc_loss(y_true, y_pred)
 
@@ -40,7 +40,7 @@ def main(args):
     train_var = tf.trainable_variables()
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
-        opt = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+        opt = tf.train.MomentumOptimizer(learning_rate=args.learning_rate, momentum=0.9)
         grads = tf.gradients(total_loss, train_var)
         train_op = opt.apply_gradients(zip(grads, train_var), global_step=global_step)
 
@@ -70,11 +70,10 @@ if __name__ == '__main__':
     parser.add_argument('--model_dir', default='weights/')
     parser.add_argument('--log_path', default='weights/out.log')
     parser.add_argument('--batch_size', type=int, default=8)
-    parser.add_argument('--learning_rate', type=float, default=3e-4)
+    parser.add_argument('--learning_rate', type=float, default=1e-3)
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--input_size', type=int, default=320)
     parser.add_argument('--num_boxes', type=int, default=19215) # (40x40+20x20+10x10+5x5+3x3+1x1)x9=19215
     parser.add_argument('--gpu', type=str, default='0')
-    parser.add_argument('--model', type=str, default='vgg')
     os.environ['CUDA_VISIBLE_DEVICES'] = parser.parse_args().gpu
     main(parser.parse_args())

@@ -3,37 +3,23 @@ import tensorflow as tf
 from utils.layer import *
 
 class M2Det:
-    def __init__(self, inputs, is_training, num_classes, model):
+    def __init__(self, inputs, is_training, num_classes):
         self.num_classes = num_classes + 1 # for background class
         self.levels = 8
         self.scales = 6
         self.num_priors = 9
-        self.model = model
         self.build(inputs, is_training)
 
     def build(self, inputs, is_training):
-        if self.model == 'resnet':
-            with tf.variable_scope('ResNet50'):
-                print('ResNet50')
-                net = inputs
-                net = conv2d_layer(net, 64, 7, 2)
-                net = block_layer(net, is_training, 64, 3, 1)
-                net = block_layer(net, is_training, 128, 4, 2)
-                net = block_layer(net, is_training, 256, 6, 2)
-                feature1 = tf.nn.relu(batch_norm(net, is_training))
-                net = block_layer(net, is_training, 256, 3, 2)
-                feature2 = tf.nn.relu(batch_norm(net, is_training))
-        else:
-            with tf.variable_scope('VGG16'):
-                print('VGG16')
-                net = inputs
-                net = vgg_layer(net, is_training, 64, 2)
-                net = vgg_layer(net, is_training, 128, 2)
-                net = vgg_layer(net, is_training, 256, 3)
-                net = vgg_layer(net, is_training, 512, 3, without_pooling=True)
-                feature1 = net
-                net = vgg_layer(net, is_training, 1024, 3)
-                feature2 = net
+        with tf.variable_scope('VGG16'):
+            net = inputs
+            net = vgg_layer(net, is_training, 64, 2)
+            net = vgg_layer(net, is_training, 128, 2)
+            net = vgg_layer(net, is_training, 256, 3)
+            net = vgg_layer(net, is_training, 512, 3, pooling=False)
+            feature1 = net
+            net = vgg_layer(net, is_training, 1024, 3)
+            feature2 = net
 
         with tf.variable_scope('M2Det'):
             with tf.variable_scope('FFMv1'):
@@ -76,11 +62,11 @@ class M2Det:
             with tf.variable_scope('prediction'):
                 for i, feature in enumerate(features):
                     print(i+1, feature.shape)
-                    cls = conv2d_layer(feature, self.num_priors * self.num_classes, 3, 1)
+                    cls = conv2d_layer(feature, self.num_priors * self.num_classes, 3, 1, use_bias=True)
                     cls = batch_norm(cls, is_training) # activation function is identity
                     cls = flatten_layer(cls)
                     all_cls.append(cls)
-                    reg = conv2d_layer(feature, self.num_priors * 4, 3, 1)
+                    reg = conv2d_layer(feature, self.num_priors * 4, 3, 1, use_bias=True)
                     reg = batch_norm(reg, is_training) # activation function is identity
                     reg = flatten_layer(reg)
                     all_reg.append(reg)
@@ -97,5 +83,4 @@ if __name__ == '__main__':
     inputs = tf.placeholder(tf.float32, [None, 320, 320, 3])
     is_training = tf.constant(False)
     num_classes = 80
-    model = 'resnet'
-    m2det = M2Det(inputs, is_training, num_classes, model)
+    m2det = M2Det(inputs, is_training, num_classes)

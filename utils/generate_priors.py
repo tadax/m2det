@@ -1,13 +1,6 @@
 import numpy as np
 
-def generate_priors(image_size, num_scales=3):
-    if image_size == 320:
-        anchor_scale = 1.2
-        shapes = [40, 20, 10, 5, 3, 1]
-    elif image_size == 640:
-        anchor_scale = 3.0
-        shapes = [80, 40, 20, 10, 5, 3]
-
+def generate_priors(num_scales=3, anchor_scale=4.0, image_size=320):
     anchor_configs = {}
     for shape in [40, 20, 10, 5, 3, 1]:
         anchor_configs[shape] = []
@@ -38,4 +31,5 @@ def generate_priors(image_size, num_scales=3):
         boxes_all.append(boxes_level.reshape([-1, 4]))
 
     anchor_boxes = np.vstack(boxes_all)
+
     return anchor_boxes

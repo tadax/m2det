@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-def conv2d_layer(x, filters, kernel_size, strides, without_padding=False):
+def conv2d_layer(x, filters, kernel_size, strides, without_padding=False, use_bias=False):
     if without_padding:
         padding = 'VALID'
     elif strides > 1:
@@ -14,7 +14,7 @@ def conv2d_layer(x, filters, kernel_size, strides, without_padding=False):
         padding = 'SAME'
     return tf.layers.conv2d(
         inputs=x, filters=filters, kernel_size=kernel_size, strides=strides,
-        padding=padding, use_bias=False,
+        padding=padding, use_bias=use_bias,
         kernel_initializer=tf.variance_scaling_initializer(),
         data_format='channels_last')
 
@@ -43,11 +43,11 @@ def block_layer(x, is_training, filters, num_blocks, strides):
         x = bottleneck_block_v2(x, filters, is_training, 1)
     return x
 
-def vgg_layer(x, is_training, filters, num_blocks, without_pooling=False):
+def vgg_layer(x, is_training, filters, num_blocks, pooling=True):
     for _ in range(num_blocks):
         x = conv2d_layer(x, filters, 3, 1)
         x = tf.nn.relu(batch_norm(x, is_training))
-    if not without_pooling:
+    if pooling:
         x = tf.layers.max_pooling2d(x, 2, 2, padding='VALID')
     return x 
 

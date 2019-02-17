@@ -31,7 +31,7 @@ def draw(frame, results):
             cv2.rectangle(frame, (left, top), (right, bottom), color, border_size)
             cv2.rectangle(frame, (left, top), (left + label_width, top + label_height), color, -1)
             cv2.putText(frame, data, (left, top + label_height - border_size), font, font_size, text_color, font_scale, line_type)
-            #print('{}: {} - left: {}, top: {}, right: {}, bottom: {}'.format(name, prob, left, top, right, bottom))
+            print('{}: {} - left: {}, top: {}, right: {}, bottom: {}'.format(name, prob, left, top, right, bottom))
 
 def get_classes(index):
     obj = [v for k, v in table.mscoco2017.items()]
@@ -46,8 +46,7 @@ def main(args):
         model_path=args.model_path, 
         input_size=args.input_size, 
         num_classes=args.num_classes, 
-        threshold=args.threshold,
-        model=args.model)
+        threshold=args.threshold)
 
     if args.inputs.endswith('.mp4'):
         cap = cv2.VideoCapture(args.inputs)
@@ -80,7 +79,6 @@ if __name__ == '__main__':
     parser.add_argument('--input_size', type=int, default=320)
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--threshold', type=float, default=0.60)
-    parser.add_argument('--gpu', type=str, default='0')
-    parser.add_argument('--model', type=str, default='vgg')
+    parser.add_argument('--gpu', type=str, default='-1')
     os.environ['CUDA_VISIBLE_DEVICES'] = parser.parse_args().gpu
     main(parser.parse_args())

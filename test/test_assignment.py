@@ -6,7 +6,6 @@ import argparse
 
 from utils.assign_boxes import assign_boxes
 from utils.generate_priors import generate_priors
-from utils.nms import naive_nms
 from utils.augment import augment
 from mscoco import table
 
@@ -53,7 +52,8 @@ def decode_box(boxes, priors):
 
 def main(args):
     num_classes = 100 # dummpy
-    priors = generate_priors(args.image_size)
+    priors = generate_priors()
+    print(len(priors))
 
     paths = []
     for bb_path in glob.glob(os.path.join(args.label_dir, '*.txt')):
@@ -98,28 +98,19 @@ def main(args):
 
         decode_bbox = decode_box(boxes, priors)
 
-        boxes = []
         for box, pred in zip(decode_bbox, preds):
-            xmin, ymin, xmax, ymax = [int(f * args.image_size) for f in box]
             clsid = np.argmax(pred)
             if clsid == 0:
                 # in the case of background
                 continue
+            xmin, ymin, xmax, ymax = [int(f * args.image_size) for f in box]
             clsid -= 1 # decrement to skip background class
-            boxes.append([clsid, 1.0, xmin, ymin, xmax, ymax])
 
-        if len(boxes) > 0:
-            boxes = naive_nms(boxes, threshold=0., iou_threshold=0.8)
-
-            for clsid, box in boxes.items():
-                for _, coord in box:
-                    left, top, right, bottom = [int(i) for i in coord]
-                    draw(img, clsid, left, top, right, bottom)
-
-            print(len(labels), sum([len(j) for i, j in boxes.items()]))
-
-        else:
-            print(len(labels), 0)
+            left = int(xmin)
+            top = int(ymin)
+            right = int(xmax)
+            bottom = int(ymax)
+            draw(img, clsid, left, top, right, bottom)
 
         out = np.concatenate((img0, img), axis=1)
         cv2.imshow('', out)

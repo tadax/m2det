@@ -126,52 +126,44 @@ def main(args):
 
     print('data size: {}'.format(len(predict_labels)))
 
-    APs = []
+    AP = {}
+    iou_threshold = 0.50
     for clsid in range(args.num_classes):
-        APs.append([])
-        for iou_threshold in np.arange(0.50, 0.96, 0.05):
-            precisions = []
-            recalls = []
-            for prob_threshold in np.arange(0.0, 1.01, 0.1):
-                precision, recall = calc_precision(predict_labels, true_labels, 
-                                                   clsid, prob_threshold,
-                                                   iou_threshold)
-                if recall is not None:
-                    precisions.append(precision)
-                    recalls.append(recall)
+        precisions = []
+        recalls = []
+        for prob_threshold in np.arange(0.0, 1.01, 0.1):
+            precision, recall = calc_precision(predict_labels, true_labels, 
+                                               clsid, prob_threshold,
+                                               iou_threshold)
+            if recall is not None:
+                precisions.append(precision)
+                recalls.append(recall)
 
-            if len(recalls) == 0:
-                continue
-
-            step_num = 10
-            maximum_precision = np.zeros(step_num + 1)
-            for jx in range(len(recalls)):
-                v = precisions[jx]
-                k = int(recalls[jx] * step_num) # horizontal axis 
-                maximum_precision[k] = max(maximum_precision[k], v)
-                
-            # intrepolation
-            v = 0
-            for jx in range(step_num + 1):
-                v = max(v, maximum_precision[-jx-1])
-                maximum_precision[-jx-1] = v
-                
-            AP = np.mean(maximum_precision)
-            APs[clsid].append(AP)
-
-    mAP50 = []
-    mAP5095 = []
-    for ix, AP in enumerate(APs):
-        if len(AP) == 0:
+        if len(recalls) == 0:
             continue
-        name = get_classes(ix)
-        mAP50.append(AP[0])
-        mAP5095.append(np.mean(AP))
-        print('{} {}: {}'.format(ix, name, AP[0]*100))
+
+        step_num = 10
+        maximum_precision = np.zeros(step_num + 1)
+        for jx in range(len(recalls)):
+            v = precisions[jx]
+            k = int(recalls[jx] * step_num) # horizontal axis 
+            maximum_precision[k] = max(maximum_precision[k], v)
+            
+        # intrepolation
+        v = 0
+        for jx in range(step_num + 1):
+            v = max(v, maximum_precision[-jx-1])
+            maximum_precision[-jx-1] = v
+            
+        AP[clsid] = np.mean(maximum_precision)
+
+    print(AP)
+    for clsid, elem in AP.items():
+        name = get_classes(clsid)
+        print('{} {}: {}'.format(clsid, name, elem*100))
 
     print('----------')
-    print('mAP@0.5: {}'.format(np.mean(mAP50)*100))
-    print('mAP@[0.5:0.95]: {}'.format(np.mean(mAP5095)*100))
+    print('mAP@0.5: {}'.format(np.mean([v for i, v in AP.items()])*100))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

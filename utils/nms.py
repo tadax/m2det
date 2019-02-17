@@ -13,7 +13,45 @@ def calc_iou(box1, box2):
     iou = intersection / union
     return iou
 
-def naive_nms(boxes, threshold, iou_threshold=0.3, max_instances=20):
+def nms(boxes, threshold, iou_threshold=0.25):
+    boxes = np.array(boxes)
+    classes = boxes[:, 0]
+    probs = boxes[:, 1]
+    coords = boxes[:, 2:]
+
+    index = np.argsort(probs)[::-1]
+    classes = classes[index]
+    probs = probs[index]
+    coords = coords[index]
+
+    mask = probs >= threshold
+    classes = classes[mask]
+    probs = probs[mask]
+    coords = coords[mask]
+
+    results = {}
+    while len(probs) > 0:
+        clsid = int(classes[0])
+        prob = probs[0]
+        coord = coords[0]
+        classes = np.delete(classes, 0, axis=0)
+        coords = np.delete(coords, 0, axis=0)
+        probs = np.delete(probs, 0, axis=0)
+
+        ious = np.array([calc_iou(coord, c) for c in coords])
+        mask = ious < iou_threshold
+        classes = classes[mask]
+        probs = probs[mask]
+        coords = coords[mask]
+
+        if clsid in results:
+            results[clsid].append((prob, coord))
+        else:
+            results[clsid] = [(prob, coord)]
+        
+    return results
+
+def class_nms(boxes, threshold, iou_threshold=0.25, max_instances=20):
     boxes = np.array(boxes)
     classes = boxes[:, 0]
     unique_classes = [int(i) for i in list(set(classes))]
@@ -50,7 +88,7 @@ def naive_nms(boxes, threshold, iou_threshold=0.3, max_instances=20):
 
     return results
 
-def nms(boxes, threshold, sigma=0.5, max_instances=20):
+def soft_nms(boxes, threshold, sigma=0.5, max_instances=20):
     '''
     boxes shape: [num_boxes, 6]
     second dimension: class, prob, left, top, right, bottom
