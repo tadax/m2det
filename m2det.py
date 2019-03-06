@@ -50,7 +50,7 @@ class M2Det:
                 for i in range(self.scales):
                     feature = tf.concat([outs[j][i] for j in range(self.levels)], axis=3)
                     attention = tf.reduce_mean(feature, axis=[1, 2], keepdims=True)
-                    attention = tf.layers.dense(inputs=feature, units=64, 
+                    attention = tf.layers.dense(inputs=attention, units=64, 
                                                 activation=tf.nn.sigmoid, name='fc1_{}'.format(i+1))
                     attention = tf.layers.dense(inputs=attention, units=1024,
                                                 activation=tf.nn.relu, name='fc2_{}'.format(i+1))
