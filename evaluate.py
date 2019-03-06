@@ -94,6 +94,8 @@ def main(args):
         threshold=0.0)
 
     img_paths = glob.glob(os.path.join(args.image_dir, '*'))
+    img_paths.sort()
+
     predict_labels = []
     true_labels = []
 
