@@ -1,6 +1,6 @@
 import numpy as np
 
-def generate_priors(num_scales=3, anchor_scale=4.0, image_size=320):
+def generate_priors(num_scales=3, anchor_scale=2.0, image_size=320):
     anchor_configs = {}
     for shape in [40, 20, 10, 5, 3, 1]:
         anchor_configs[shape] = []
