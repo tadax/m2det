@@ -55,10 +55,6 @@ def down_sample(img):
         img = cv2.resize(img, (img_w, img_h), interpolation=cv2.INTER_CUBIC)
     return img
 
-def resize(img, input_size):
-    scaled = cv2.resize(img, (input_size, input_size), interpolation=cv2.INTER_CUBIC)
-    return scaled
-
 def multi_scale(img, boxes):
     if np.random.uniform() > 0.5:
         return img, boxes
@@ -89,11 +85,34 @@ def multi_scale(img, boxes):
 
     return out, scaled_boxes
 
+def scale(img, labels, img_size):
+    img_h, img_w = img.shape[:2]
+    ratio = max(img_h, img_w) / img_size
+    new_h = int(img_h / ratio)
+    new_w = int(img_w / ratio)
+    ox = (img_size - new_w) // 2
+    oy = (img_size - new_h) // 2
+    scaled = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
+    out = np.ones((img_size, img_size, 3), dtype=np.uint8) * 127
+    out[oy:oy + new_h, ox:ox + new_w, :] = scaled
+
+    scaled_labels = []
+    for label in labels:
+        xmin, ymin, xmax, ymax = label[0:4]
+        xmin = (xmin * new_w + ox) / img_size
+        ymin = (ymin * new_h + oy) / img_size
+        xmax = (xmax * new_w + ox) / img_size
+        ymax = (ymax * new_h + oy) / img_size
+        label = [xmin, ymin, xmax, ymax] + label[4:]
+        scaled_labels.append(label)
+
+    return out, scaled_labels
+
 def augment(img, boxes, input_size):
-    img, boxes = random_crop(img, boxes)
+    #img, boxes = random_crop(img, boxes)
     img, boxes = random_flip(img, boxes)
-    img, boxes = multi_scale(img, boxes)
-    img = resize(img, input_size)
-    img = down_sample(img)
+    #img, boxes = multi_scale(img, boxes)
+    #img = down_sample(img)
+    img, boxes = scale(img, boxes, input_size)
     img = normalize(img)
     return img, boxes
