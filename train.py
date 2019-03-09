@@ -36,6 +36,10 @@ def main(args):
     y_pred = net.prediction
     total_loss = calc_loss(y_true, y_pred)
 
+    weights = [v for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES) if 'kernel' in v.name]
+    decay = tf.reduce_sum(tf.stack([tf.nn.l2_loss(w) for w in weights])) * 1e-3
+    total_loss += decay
+
     global_step = tf.Variable(0, name='global_step', trainable=False)
     train_var = tf.trainable_variables()
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
