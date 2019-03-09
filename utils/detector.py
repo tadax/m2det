@@ -50,16 +50,24 @@ class Detector:
         return decode_bbox
 
     def preprocess(self, img):
-        img = cv2.resize(img, (self.input_size, self.input_size), interpolation=cv2.INTER_CUBIC)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = (img - 127.5) / 128.0
-        return img
+        img_h, img_w = img.shape[:2]
+        ratio = max(img_h, img_w) / self.input_size
+        new_h = int(img_h / ratio)
+        new_w = int(img_w / ratio)
+        ox = (self.input_size - new_w) // 2
+        oy = (self.input_size - new_h) // 2
+        scaled = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
+        inp = np.ones((self.input_size, self.input_size, 3), dtype=np.uint8) * 127
+        inp[oy:oy + new_h, ox:ox + new_w, :] = scaled
+        inp = (inp - 127.5) / 128.0
+        return inp, ox, oy, new_w, new_h
 
     def detect(self, img):
         img_h, img_w = img.shape[:2]
-        img = self.preprocess(img)
+        inp, ox, oy, new_w, new_h = self.preprocess(img)
 
-        outs = self.sess.run(self.net.prediction, feed_dict={self.inputs: np.array([img])})[0]
+        outs = self.sess.run(self.net.prediction, feed_dict={self.inputs: np.array([inp])})[0]
 
         # shape of y_pred: (?, num_boxes, 4 + num_classes)
         boxes = outs[:, :4]
@@ -75,10 +83,10 @@ class Detector:
                 continue
             clsid -= 1 # decrement to skip background class
             prob = np.max(pred)
-            left = xmin * img_w
-            top = ymin * img_h
-            right = xmax * img_w
-            bottom = ymax * img_h
+            left = (xmin * self.input_size - ox) / new_w * img_w
+            top = (ymin * self.input_size - oy) / new_h * img_h
+            right = (xmax * self.input_size - ox) / new_w * img_w
+            bottom = (ymax * self.input_size - oy) / new_h * img_h
             results.append([clsid, prob, left, top, right, bottom])
 
         if len(results) > 0:
