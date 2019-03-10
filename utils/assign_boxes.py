@@ -1,6 +1,6 @@
 import numpy as np
 
-def encode_box(box, priors, assignment_threshold=0.5):
+def encode_box(box, priors, assignment_threshold=0.25):
     inter_upleft = np.maximum(priors[:, :2], box[:2])
     inter_botright = np.minimum(priors[:, 2:], box[2:])
     inter_wh = np.maximum(inter_botright - inter_upleft, 0)
