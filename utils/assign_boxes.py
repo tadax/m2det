@@ -40,7 +40,7 @@ def assign_boxes(boxes, priors, num_classes):
     assign_num = len(best_iou_idx)
     encoded_boxes = encoded_boxes[:, best_iou_mask, :]
     assignment[:, :4][best_iou_mask] = encoded_boxes[best_iou_idx, np.arange(assign_num), :4]
-    assignment[:, 4][best_iou_mask] = 0
+    assignment[:, 4][best_iou_mask] = 0 # background
     assignment[:, 5:-1][best_iou_mask] = boxes[best_iou_idx, 4:]
-    assignment[:, -1][best_iou_mask] = 1
+    assignment[:, -1][best_iou_mask] = 1 # objectness
     return assignment
