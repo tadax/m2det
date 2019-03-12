@@ -11,10 +11,10 @@ def encode_box(box, priors, assignment_threshold=0.25):
     union = area_pred + area_gt - inter
     iou = inter / union
 
-    encoded_box = np.zeros((len(priors), 4))
+    encoded_box = np.zeros((len(priors), 5))
     assign_mask = iou >= assignment_threshold
     encoded_box[:, -1][assign_mask] = iou[assign_mask]
-    assigned_priors = priors[assign_mask]
+    assigned_priors = priors[assign_mask] 
     box_center = 0.5 * (box[:2] + box[2:])
     box_wh = box[2:] - box[:2]
     assigned_priors_center = 0.5 * (assigned_priors[:, :2] + assigned_priors[:, 2:])
@@ -32,7 +32,7 @@ def assign_boxes(boxes, priors, num_classes):
     assignment = np.zeros((len(priors), 4 + num_classes + 1))
     assignment[:, 4] = 1.0 # background
     encoded_boxes = np.apply_along_axis(encode_box, 1, boxes[:, :4], priors)
-    encoded_boxes = encoded_boxes.reshape(-1, len(priors), 4)
+    encoded_boxes = encoded_boxes.reshape(-1, len(priors), 5)
     best_iou = encoded_boxes[:, :, -1].max(axis=0)
     best_iou_idx = encoded_boxes[:, :, -1].argmax(axis=0)
     best_iou_mask = best_iou > 0 # judge by iou between prior and bbox
