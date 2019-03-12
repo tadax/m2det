@@ -21,12 +21,17 @@ def draw(frame, results):
     font_size = float(base_font_size * ratio)
     font_scale = int(base_font_scale * ratio)
 
+    h, w = frame.shape[:2]
     for cls, result in results.items():
         result = result[::-1]
         for prob, coord in result:
             name, color = get_classes(cls)
             data = '{}: {}'.format(name, round(prob, 3))
             left, top, right, bottom = [int(i) for i in coord]
+            left = max(0, left)
+            top = max(0, top)
+            right = min(w, right)
+            bottom = min(h, bottom)
             (label_width, label_height), baseline = cv2.getTextSize(data, font, font_size, font_scale)
             cv2.rectangle(frame, (left, top), (right, bottom), color, border_size)
             cv2.rectangle(frame, (left, top), (left + label_width, top + label_height), color, -1)
