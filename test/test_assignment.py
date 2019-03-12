@@ -95,10 +95,11 @@ def main(args):
         y_true = assign_boxes(labels, priors, num_classes)
         preds = y_true[:, 4:-1]
         boxes = y_true[:, :4]
+        objectness = y_true[:, -1]
 
         decode_bbox = decode_box(boxes, priors)
 
-        for box, pred in zip(decode_bbox, preds):
+        for box, pred, obj in zip(decode_bbox, preds, objectness):
             clsid = np.argmax(pred)
             if clsid == 0:
                 # in the case of background
