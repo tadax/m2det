@@ -8,7 +8,7 @@ import argparse
 
 from m2det import M2Det
 from utils.generate_priors import generate_priors
-from utils.nms import nms
+from utils.nms import soft_nms
 
 class Detector:
     def __init__(self, model_path, input_size, num_classes, threshold):
@@ -63,6 +63,9 @@ class Detector:
         inp = (inp - 127.5) / 128.0
         return inp, ox, oy, new_w, new_h
 
+    def sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
+
     def detect(self, img):
         img_h, img_w = img.shape[:2]
         inp, ox, oy, new_w, new_h = self.preprocess(img)
@@ -82,7 +85,7 @@ class Detector:
                 # in the case of background
                 continue
             clsid -= 1 # decrement to skip background class
-            prob = np.max(pred)
+            prob = self.sigmoid(np.max(pred))
             left = (xmin * self.input_size - ox) / new_w * img_w
             top = (ymin * self.input_size - oy) / new_h * img_h
             right = (xmax * self.input_size - ox) / new_w * img_w
@@ -90,6 +93,6 @@ class Detector:
             results.append([clsid, prob, left, top, right, bottom])
 
         if len(results) > 0:
-            return nms(results, self.threshold)
+            return soft_nms(results, self.threshold)
         else:
             return {}
