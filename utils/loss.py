@@ -1,6 +1,7 @@
 import tensorflow as tf
 
-def calc_cls_loss(cls_outputs, cls_targets, positive_mask, num_positives, num_anchors, batch_size, alpha=0.25, gamma=2.0):
+def calc_cls_loss(cls_outputs, cls_targets, positive_mask, batch_size, num_anchors, alpha=0.25, gamma=2.0):
+    num_positives = tf.reduce_sum(positive_mask, axis=-1) # shape: [batch_size,]
     num_negatives = tf.minimum(3 * num_positives, num_anchors - num_positives) # neg_pos_ratio is 3
     negative_mask = tf.greater(num_negatives, 0)
 
@@ -26,10 +27,10 @@ def calc_cls_loss(cls_outputs, cls_targets, positive_mask, num_positives, num_an
     cls_loss /= (num_positives + tf.to_float(num_neg_batch))
     return cls_loss
     
-def calc_box_loss(box_outputs, box_targets, positive_mask, num_positives, delta=0.1):
+def calc_box_loss(box_outputs, box_targets, positive_mask, delta=0.1):
+    num_positives = tf.reduce_sum(positive_mask, axis=-1) # shape: [batch_size,]
     normalizer = num_positives * 4
-    # to avoid division by 0
-    normalizer = tf.where(tf.not_equal(normalizer, 0), normalizer, tf.ones_like(normalizer))
+    normalizer = tf.where(tf.not_equal(normalizer, 0), normalizer, tf.ones_like(normalizer)) # to avoid division by 0
 
     sq_loss = 0.5 * (box_targets - box_outputs) ** 2
     abs_loss = 0.5 * delta ** 2 + delta * (tf.abs(box_outputs - box_targets) - delta)
@@ -59,10 +60,9 @@ def calc_loss(y_true, y_pred, box_loss_weight=50.0):
     positive_mask = y_true[:, :, -1]
     batch_size = tf.shape(y_true)[0]
     num_anchors = tf.to_float(tf.shape(y_true)[1])
-    num_positives = tf.reduce_sum(positive_mask, axis=-1) # shape: [batch_size,]
 
-    box_loss = calc_box_loss(box_outputs, box_targets, positive_mask, num_positives)
-    cls_loss = calc_cls_loss(cls_outputs, cls_targets, positive_mask, num_positives, num_anchors, batch_size)
+    box_loss = calc_box_loss(box_outputs, box_targets, positive_mask)
+    cls_loss = calc_cls_loss(cls_outputs, cls_targets, positive_mask, batch_size, num_anchors)
     total_loss = cls_loss + box_loss_weight * box_loss
 
     return tf.reduce_mean(total_loss)
