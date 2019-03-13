@@ -9,13 +9,29 @@ def calc_cls_loss(cls_outputs, cls_targets, num_positives, alpha=0.25, gamma=2.0
         cls_loss: [batch_size]
 
     Compute focal loss:
-        FL = -(1 - pt)^gamma *log(pt)
-        cf. https://arxiv.org/pdf/1708.02002.pdf
+        FL = -(1 - pt)^gamma * log(pt):
+        where pt = p if y == 1 else 1 - p
+            if (y == 1): -(1 - p)^gamma * log(p)
+            else: -p^gamma * log(1 - p)
+
+    cf. https://arxiv.org/pdf/1708.02002.pdf
+    """
+    positive_mask = tf.equal(cls_targets, 1.0)
+    out_p = tf.sigmoid(cls_outputs)
+    pos = tf.where(positive_mask, 1.0 - out_p, tf.zeros_like(out_p))
+    neg = tf.where(positive_mask, tf.zeros_like(out_p), out_p)
+    pos_loss = - alpha * tf.pow(pos, gamma) * tf.log(tf.clip_by_value(out_p, 1e-8, 1.0))
+    neg_loss = - (1 - alpha) * tf.pow(neg, gamma) * tf.log(tf.clip_by_value(1.0 - out_p, 1e-8, 1.0))
+    loss = tf.reduce_mean(pos_loss + neg_loss, axis=[1, 2])
+    return loss
+    
     """
     normalize = num_positives + 1
     positive_mask = tf.equal(cls_targets, 1.0)
-    cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(labels=cls_targets, logits=cls_outputs)
-    probs = tf.sigmoid(cls_outputs)
+
+    probs = tf.nn.softmax(cls_outputs)
+    cross_entropy = -tf.log(tf.clip_by_value(probs, 1e-8, 1.0)) * cls_targets
+
     probs_gt = tf.where(positive_mask, probs, 1.0 - probs)
     modulator = tf.pow(1.0 - probs_gt, gamma)
     loss = modulator * cross_entropy
@@ -23,6 +39,7 @@ def calc_cls_loss(cls_outputs, cls_targets, num_positives, alpha=0.25, gamma=2.0
     loss = tf.reduce_sum(loss, axis=[1, 2])
     loss = loss / normalize
     return loss
+    """
     
 def calc_cls_loss_old(cls_outputs, cls_targets, positive_flag):
     batch_size = tf.shape(cls_outputs)[0]

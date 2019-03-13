@@ -85,7 +85,7 @@ class Detector:
                 # in the case of background
                 continue
             clsid -= 1 # decrement to skip background class
-            prob = self.sigmoid(np.max(pred))
+            prob = np.sigmoid(np.max(pred))
             left = (xmin * self.input_size - ox) / new_w * img_w
             top = (ymin * self.input_size - oy) / new_h * img_h
             right = (xmax * self.input_size - ox) / new_w * img_w
