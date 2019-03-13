@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-def _classification_loss(cls_outputs, cls_targets, positive_mask, num_positives, num_anchors, batch_size, alpha=0.25, gamma=2.0):
+def calc_cls_loss(cls_outputs, cls_targets, positive_mask, num_positives, num_anchors, batch_size, alpha=0.25, gamma=2.0):
     num_negatives = tf.minimum(3 * num_positives, num_anchors - num_positives) # neg_pos_ratio is 3
     negative_mask = tf.greater(num_negatives, 0)
 
@@ -22,12 +22,11 @@ def _classification_loss(cls_outputs, cls_targets, positive_mask, num_positives,
     neg_conf_loss = tf.reshape(neg_conf_loss, [batch_size, num_neg_batch])
     neg_conf_loss = tf.reduce_sum(neg_conf_loss, axis=1)
 
-    classification_loss = pos_conf_loss + neg_conf_loss
-    classification_loss /= (num_positives + tf.to_float(num_neg_batch))
-
-    return classification_loss
+    cls_loss = pos_conf_loss + neg_conf_loss
+    cls_loss /= (num_positives + tf.to_float(num_neg_batch))
+    return cls_loss
     
-def _box_loss(box_outputs, box_targets, positive_mask, num_positives, delta=0.1):
+def calc_box_loss(box_outputs, box_targets, positive_mask, num_positives, delta=0.1):
     normalizer = num_positives * 4
     # to avoid division by 0
     normalizer = tf.where(tf.not_equal(normalizer, 0), normalizer, tf.ones_like(normalizer))
@@ -62,8 +61,8 @@ def calc_loss(y_true, y_pred, box_loss_weight=50.0):
     num_anchors = tf.to_float(tf.shape(y_true)[1])
     num_positives = tf.reduce_sum(positive_mask, axis=-1) # shape: [batch_size,]
 
-    box_loss = _box_loss(box_outputs, box_targets, positive_mask, num_positives)
-    classification_loss = _classification_loss(cls_outputs, cls_targets, positive_mask, num_positives, num_anchors, batch_size)
-    total_loss = classification_loss + box_loss_weight * box_loss
+    box_loss = calc_box_loss(box_outputs, box_targets, positive_mask, num_positives)
+    cls_loss = calc_cls_loss(cls_outputs, cls_targets, positive_mask, num_positives, num_anchors, batch_size)
+    total_loss = cls_loss + box_loss_weight * box_loss
 
     return tf.reduce_mean(total_loss)
