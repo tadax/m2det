@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-def calc_cls_loss(cls_outputs, cls_targets, num_positives, alpha=0.25, gamma=2.0):
+def calc_focal_loss(cls_outputs, cls_targets, num_positives, alpha=0.25, gamma=2.0):
     """
     Args:
         cls_outputs: [batch_size, num_anchors, num_classes]
@@ -17,42 +17,26 @@ def calc_cls_loss(cls_outputs, cls_targets, num_positives, alpha=0.25, gamma=2.0
     cf. https://arxiv.org/pdf/1708.02002.pdf
     """
     positive_mask = tf.equal(cls_targets, 1.0)
-    out_p = tf.sigmoid(cls_outputs)
-    pos = tf.where(positive_mask, 1.0 - out_p, tf.zeros_like(out_p))
-    neg = tf.where(positive_mask, tf.zeros_like(out_p), out_p)
-    pos_loss = - alpha * tf.pow(pos, gamma) * tf.log(tf.clip_by_value(out_p, 1e-8, 1.0))
-    neg_loss = - (1 - alpha) * tf.pow(neg, gamma) * tf.log(tf.clip_by_value(1.0 - out_p, 1e-8, 1.0))
+    cls_outputs = tf.clip_by_value(cls_outputs, 1e-15, 1 - 1e-15)
+    pos = tf.where(positive_mask, 1.0 - cls_outputs, tf.zeros_like(cls_outputs))
+    neg = tf.where(positive_mask, tf.zeros_like(cls_outputs), cls_outputs)
+    pos_loss = - alpha * tf.pow(pos, gamma) * tf.log(cls_outputs)
+    neg_loss = - (1 - alpha) * tf.pow(neg, gamma) * tf.log(1.0 - cls_outputs)
     loss = tf.reduce_mean(pos_loss + neg_loss, axis=[1, 2])
     return loss
     
-    """
-    normalize = num_positives + 1
-    positive_mask = tf.equal(cls_targets, 1.0)
-
-    probs = tf.nn.softmax(cls_outputs)
-    cross_entropy = -tf.log(tf.clip_by_value(probs, 1e-8, 1.0)) * cls_targets
-
-    probs_gt = tf.where(positive_mask, probs, 1.0 - probs)
-    modulator = tf.pow(1.0 - probs_gt, gamma)
-    loss = modulator * cross_entropy
-    loss = tf.where(positive_mask, alpha * loss, (1.0 - alpha) * loss)
-    loss = tf.reduce_sum(loss, axis=[1, 2])
-    loss = loss / normalize
-    return loss
-    """
-    
-def calc_cls_loss_old(cls_outputs, cls_targets, positive_flag):
+def calc_cls_loss(cls_outputs, cls_targets, positive_flag):
     batch_size = tf.shape(cls_outputs)[0]
     num_anchors = tf.to_float(tf.shape(cls_outputs)[1])
     num_positives = tf.reduce_sum(positive_flag, axis=-1) # shape: [batch_size,]
     num_negatives = tf.minimum(3 * num_positives, num_anchors - num_positives) # neg_pos_ratio is 3
     negative_mask = tf.greater(num_negatives, 0)
 
-    cls_outputs = tf.sigmoid(cls_outputs)
+    cls_outputs = tf.clip_by_value(cls_outputs, 1e-15, 1 - 1e-15)
     conf_loss = -tf.reduce_sum(cls_targets * tf.log(cls_outputs), axis=-1)
     pos_conf_loss = tf.reduce_sum(conf_loss * positive_flag, axis=1) 
     
-    has_min = tf.to_float(tf.reduce_any(negative_mask)) # it would be 0.0 if ALL num_neg are 0
+    has_min = tf.to_float(tf.reduce_any(negative_mask)) # would be 0.0 if ALL num_neg are 0
     num_neg = tf.concat(axis=0, values=[num_negatives, [(1 - has_min) * 100]])
     # minimum value under the condition the value > 0
     num_neg_batch = tf.reduce_min(tf.boolean_mask(num_negatives, tf.greater(num_negatives, 0)))
@@ -104,7 +88,10 @@ def calc_loss(y_true, y_pred, box_loss_weight=50.0):
     num_positives = tf.reduce_sum(positive_flag, axis=-1) # shape: [batch_size,]
 
     box_loss = calc_box_loss(box_outputs, box_targets, positive_flag)
-    cls_loss = calc_cls_loss(cls_outputs, cls_targets, num_positives)
-    total_loss = cls_loss + box_loss_weight * box_loss
+    cls_loss = calc_cls_loss(cls_outputs, cls_targets, positive_flag)
+    #cls_loss = calc_focal_loss(cls_outputs, cls_targets, num_positives)
+
+    total_loss = cls_loss + box_loss
+    #total_loss = cls_loss + box_loss_weight * box_loss
 
     return tf.reduce_mean(total_loss)
