@@ -9,12 +9,8 @@ def calc_focal_loss(cls_outputs, cls_targets, num_positives, alpha=0.25, gamma=2
         cls_loss: [batch_size]
 
     Compute focal loss:
-        FL = -(1 - pt)^gamma * log(pt):
-        where pt = p if y == 1 else 1 - p
-            if (y == 1): -(1 - p)^gamma * log(p)
-            else: -p^gamma * log(1 - p)
-
-    cf. https://arxiv.org/pdf/1708.02002.pdf
+        FL = -(1 - pt)^gamma * log(pt), where pt = p if y == 1 else 1 - p
+        cf. https://arxiv.org/pdf/1708.02002.pdf
     """
     positive_mask = tf.equal(cls_targets, 1.0)
     #cls_outputs = tf.clip_by_value(cls_outputs, 1e-15, 1 - 1e-15)
