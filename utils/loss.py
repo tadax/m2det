@@ -17,11 +17,11 @@ def calc_focal_loss(cls_outputs, cls_targets, num_positives, alpha=0.25, gamma=2
     cf. https://arxiv.org/pdf/1708.02002.pdf
     """
     positive_mask = tf.equal(cls_targets, 1.0)
-    cls_outputs = tf.clip_by_value(cls_outputs, 1e-15, 1 - 1e-15)
+    #cls_outputs = tf.clip_by_value(cls_outputs, 1e-15, 1 - 1e-15)
     pos = tf.where(positive_mask, 1.0 - cls_outputs, tf.zeros_like(cls_outputs))
     neg = tf.where(positive_mask, tf.zeros_like(cls_outputs), cls_outputs)
-    pos_loss = - alpha * tf.pow(pos, gamma) * tf.log(cls_outputs)
-    neg_loss = - (1 - alpha) * tf.pow(neg, gamma) * tf.log(1.0 - cls_outputs)
+    pos_loss = - alpha * tf.pow(pos, gamma) * tf.log(tf.clip_by_value(cls_outputs, 1e-15, 1.0))
+    neg_loss = - (1 - alpha) * tf.pow(neg, gamma) * tf.log(tf.clip_by_value(1.0 - cls_outputs, 1e-15, 1.0))
     loss = tf.reduce_mean(pos_loss + neg_loss, axis=[1, 2])
     return loss
     
@@ -88,8 +88,8 @@ def calc_loss(y_true, y_pred, box_loss_weight=50.0):
     num_positives = tf.reduce_sum(positive_flag, axis=-1) # shape: [batch_size,]
 
     box_loss = calc_box_loss(box_outputs, box_targets, positive_flag)
-    cls_loss = calc_cls_loss(cls_outputs, cls_targets, positive_flag)
-    #cls_loss = calc_focal_loss(cls_outputs, cls_targets, num_positives)
+    #cls_loss = calc_cls_loss(cls_outputs, cls_targets, positive_flag)
+    cls_loss = calc_focal_loss(cls_outputs, cls_targets, num_positives)
 
     total_loss = cls_loss + box_loss
     #total_loss = cls_loss + box_loss_weight * box_loss
