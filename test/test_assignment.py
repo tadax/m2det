@@ -56,13 +56,14 @@ def main(args):
     print(len(priors))
 
     paths = []
-    for bb_path in glob.glob(os.path.join(args.label_dir, '*.txt')):
+    label_paths = glob.glob(os.path.join(args.label_dir, '*.txt'))
+    label_paths.sort()
+    for bb_path in label_paths:
         im_path = os.path.join(args.image_dir, os.path.splitext(os.path.basename(bb_path))[0] + '.jpg')
         if os.path.exists(im_path):
             paths.append([im_path, bb_path])
             
     for im_path, bb_path in paths:
-        print(im_path)
         img = cv2.imread(im_path)
         img_h, img_w = img.shape[:2]
 
@@ -92,28 +93,37 @@ def main(args):
             img = cv2.resize(img, (args.image_size, args.image_size))
 
         labels = np.array(labels)
-        y_true = assign_boxes(labels, priors, num_classes)
-        preds = y_true[:, 4:-1]
-        boxes = y_true[:, :4]
-        objectness = y_true[:, -1]
 
-        decode_bbox = decode_box(boxes, priors)
+        imgs = []
+        num_assignment = []
+        for threshold in [0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.75]:
+            img_ = img.copy()
+            y_true = assign_boxes(labels, priors, num_classes, threshold)
+            preds = y_true[:, 4:-1]
+            boxes = y_true[:, :4]
+            objectness = y_true[:, -1]
 
-        for box, pred, obj in zip(decode_bbox, preds, objectness):
-            clsid = np.argmax(pred)
-            if clsid == 0:
-                # in the case of background
-                continue
-            xmin, ymin, xmax, ymax = [int(f * args.image_size) for f in box]
-            clsid -= 1 # decrement to skip background class
+            decode_bbox = decode_box(boxes, priors)
 
-            left = int(xmin)
-            top = int(ymin)
-            right = int(xmax)
-            bottom = int(ymax)
-            draw(img, clsid, left, top, right, bottom)
+            for box, pred, obj in zip(decode_bbox, preds, objectness):
+                clsid = np.argmax(pred)
+                if clsid == 0:
+                    # in the case of background
+                    continue
+                xmin, ymin, xmax, ymax = [int(f * args.image_size) for f in box]
+                clsid -= 1 # decrement to skip background class
 
-        out = np.concatenate((img0, img), axis=1)
+                left = int(xmin)
+                top = int(ymin)
+                right = int(xmax)
+                bottom = int(ymax)
+                draw(img_, clsid, left, top, right, bottom)
+
+            imgs.append(img_)
+            num_assignment.append(sum(y_true[:, -1]))
+
+        print(im_path, num_assignment)
+        out = np.concatenate([img0] + imgs, axis=1)
         cv2.imshow('', out)
         cv2.waitKey(0)
 

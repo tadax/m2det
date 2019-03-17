@@ -10,11 +10,12 @@ from utils.assign_boxes import assign_boxes
 from utils.augment import augment
 
 class Data:
-    def __init__(self, image_dir, label_dir, num_classes, input_size):
+    def __init__(self, image_dir, label_dir, num_classes, input_size, assignment_threshold):
         self.image_dir = image_dir
         self.label_dir = label_dir
         self.num_classes = num_classes 
         self.input_size = input_size
+        self.assignment_threshold = assignment_threshold
         self.priors = generate_priors(image_size=self.input_size)
         self.size = self.get_size()
 
@@ -66,7 +67,7 @@ class Data:
             if len(boxes) == 0:
                 continue
             boxes = np.array(boxes)
-            assignment = assign_boxes(boxes, self.priors, self.num_classes)
+            assignment = assign_boxes(boxes, self.priors, self.num_classes, self.assignment_threshold)
             q.put([img, assignment])
             
     def get(self, batch_size):

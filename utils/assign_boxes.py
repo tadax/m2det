@@ -1,6 +1,6 @@
 import numpy as np
 
-def encode_box(box, priors, assignment_threshold=0.25):
+def encode_box(box, priors, assignment_threshold):
     inter_upleft = np.maximum(priors[:, :2], box[:2])
     inter_botright = np.minimum(priors[:, 2:], box[2:])
     inter_wh = np.maximum(inter_botright - inter_upleft, 0)
@@ -27,11 +27,11 @@ def encode_box(box, priors, assignment_threshold=0.25):
     encoded_box[:, 2:4][assign_mask] /= 0.2 # variance1
     return encoded_box.ravel()
 
-def assign_boxes(boxes, priors, num_classes):
+def assign_boxes(boxes, priors, num_classes, threshold=0.5):
     num_classes += 1 # add background class
     assignment = np.zeros((len(priors), 4 + num_classes + 1))
     assignment[:, 4] = 1.0 # background
-    encoded_boxes = np.apply_along_axis(encode_box, 1, boxes[:, :4], priors)
+    encoded_boxes = np.apply_along_axis(encode_box, 1, boxes[:, :4], priors, threshold)
     encoded_boxes = encoded_boxes.reshape(-1, len(priors), 5)
     best_iou = encoded_boxes[:, :, -1].max(axis=0)
     best_iou_idx = encoded_boxes[:, :, -1].argmax(axis=0)
