@@ -13,7 +13,7 @@ def calc_iou(box1, box2):
     iou = intersection / union
     return iou
 
-def nms(boxes, threshold, iou_threshold=0.25):
+def nms(boxes, threshold, iou_threshold=0.4):
     boxes = np.array(boxes)
     classes = boxes[:, 0]
     probs = boxes[:, 1]

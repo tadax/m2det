@@ -8,7 +8,7 @@ import argparse
 
 from m2det import M2Det
 from utils.generate_priors import generate_priors
-from utils.nms import soft_nms
+from utils.nms import soft_nms, nms
 
 class Detector:
     def __init__(self, model_path, input_size, num_classes, threshold):
@@ -83,10 +83,10 @@ class Detector:
                 continue
             clsid -= 1 # decrement to skip background class
             prob = np.max(pred)
-            left = (xmin * self.input_size - ox) / new_w * img_w
-            top = (ymin * self.input_size - oy) / new_h * img_h
-            right = (xmax * self.input_size - ox) / new_w * img_w
-            bottom = (ymax * self.input_size - oy) / new_h * img_h
+            left = max((xmin * self.input_size - ox) / new_w, 0.0) * img_w
+            top = max((ymin * self.input_size - oy) / new_h, 0.0) * img_h
+            right = min((xmax * self.input_size - ox) / new_w, 1.0) * img_w
+            bottom = min((ymax * self.input_size - oy) / new_h, 1.0) * img_h
             results.append([clsid, prob, left, top, right, bottom])
 
         if len(results) > 0:

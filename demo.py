@@ -65,6 +65,7 @@ def main(args):
     elif os.path.isdir(args.inputs):
         paths = glob.glob(os.path.join(args.inputs, '*'))
         for path in paths:
+            print(path)
             img = cv2.imread(path)
             results = det.detect(img)
             draw(img, results)
