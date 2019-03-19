@@ -88,46 +88,32 @@ def class_nms(boxes, threshold, iou_threshold=0.25, max_instances=20):
 
     return results
 
-def soft_nms(boxes, threshold, sigma=0.5):
+def soft_nms(results, threshold, sigma=0.5):
     '''
     Args:
-        boxes: [num_boxes, 6]
-            6: class, prob, left, top, right, bottom
+        results: [num_boxes, Dict]
+            Dict: left, top, right, bottom, name, color, confidence
     '''
 
-    boxes = np.array(boxes)
-    classes = boxes[:, 0]
-    probs = boxes[:, 1]
-    coords = boxes[:, 2:] # left, top, right, bottom
-
-    mask = probs >= threshold
-    classes = classes[mask]
-    probs = probs[mask]
-    coords = coords[mask]
-
-    results = {}
-    unique_classes = [int(i) for i in list(set(classes))]
-    for cls in unique_classes:
-        results[cls] = []
-
-    while len(classes) > 0:
-        index = np.argmax(probs)
-        cls = classes[index]
-        prob = probs[index]
-        coord = coords[index]
-
-        results[cls].append((prob, coord))
-        classes = np.delete(classes, index, axis=0)
-        coords = np.delete(coords, index, axis=0)
-        probs = np.delete(probs, index, axis=0)
+    outputs = []
+    while len(results) > 0:
+        ix = np.argmax([result['confidence'] for result in results])
+        result = results[ix]
+        outputs.append(result)
+        del results[ix]
 
         # soft-nms with a Gaussian penalty function
-        ious = [calc_iou(coord, c) for c in coords]
-        penalty = np.array([np.e ** (-iou ** 2 / sigma) for iou in ious])
-        probs = probs * penalty
-        mask = probs >= threshold
-        classes = classes[mask]
-        probs = probs[mask]
-        coords = coords[mask]
+        box1 = [result['left'], result['top'], result['right'], result['bottom']]
+        to_delete = []
+        for jx in range(len(results)):
+            box2 = [results[jx]['left'], results[jx]['top'], results[jx]['right'], results[jx]['bottom']]
+            iou = calc_iou(box1, box2)
+            penalty = np.e ** (-iou ** 2 / sigma)
+            results[jx]['confidence'] = results[jx]['confidence'] * penalty
+            if results[jx]['confidence'] < threshold:
+                to_delete.append(jx)
 
-    return results
+        for jx in to_delete[::-1]:
+            del results[jx]
+
+    return outputs

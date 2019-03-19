@@ -7,44 +7,8 @@ import tensorflow as tf
 import argparse
 
 from utils.detector import Detector
-from mscoco import table
+from utils.drawing import draw
 
-def draw(frame, results):
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    line_type = cv2.LINE_AA
-    text_color = (255, 255, 255)
-    base_border_size = 4
-    base_font_size = 0.8
-    base_font_scale = 2
-    ratio = max(frame.shape[:2]) / 1000
-    border_size = int(base_border_size * ratio)
-    font_size = float(base_font_size * ratio)
-    font_scale = int(base_font_scale * ratio)
-
-    h, w = frame.shape[:2]
-    for cls, result in results.items():
-        result = result[::-1]
-        for prob, coord in result:
-            name, color = get_classes(cls)
-            data = '{}: {}'.format(name, round(prob, 3))
-            left, top, right, bottom = [int(i) for i in coord]
-            left = max(0, left)
-            top = max(0, top)
-            right = min(w, right)
-            bottom = min(h, bottom)
-            (label_width, label_height), baseline = cv2.getTextSize(data, font, font_size, font_scale)
-            cv2.rectangle(frame, (left, top), (right, bottom), color, border_size)
-            cv2.rectangle(frame, (left, top), (left + label_width, top + label_height), color, -1)
-            cv2.putText(frame, data, (left, top + label_height - border_size), font, font_size, text_color, font_scale, line_type)
-            print('{}: {} - left: {}, top: {}, right: {}, bottom: {}'.format(name, prob, left, top, right, bottom))
-
-def get_classes(index):
-    obj = [v for k, v in table.mscoco2017.items()]
-    sorted(obj, key=lambda x:x[0])
-    classes = [j for i, j in obj]
-    np.random.seed(420)
-    colors = np.random.randint(0, 224, size=(len(classes), 3))
-    return classes[index], tuple(colors[index].tolist())
 
 def main(args):
     det = Detector(

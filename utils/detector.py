@@ -9,6 +9,7 @@ import argparse
 from m2det import M2Det
 from utils.generate_priors import generate_priors
 from utils.nms import soft_nms, nms
+from utils.classes import get_classes
 
 class Detector:
     def __init__(self, model_path, input_size, num_classes, threshold):
@@ -69,27 +70,39 @@ class Detector:
 
         outs = self.sess.run(self.net.prediction, feed_dict={self.inputs: np.array([inp])})[0]
 
-        # shape of y_pred: (?, num_boxes, 4 + num_classes)
-        boxes = outs[:, :4]
-        preds = outs[:, 4:]
-        decoded_boxes = self.decode_boxes(boxes)
+        boxes = self.decode_boxes(outs[:, :4])
+        preds = np.argmax(outs[:, 4:], axis=1) - 1 # decrement to skip background class
+        confidences = np.max(outs[:, 4:], axis=1)
+
+        mask = np.where(preds >= 0)
+        boxes = boxes[mask]
+        preds = preds[mask]
+        confidences = confidences[mask]
+
+        mask = np.where(confidences >= self.threshold)
+        boxes = boxes[mask]
+        preds = preds[mask]
+        confidences = confidences[mask]
 
         results = []
-        for box, pred in zip(decoded_boxes, preds):
+        for box, clsid, conf in zip(boxes, preds, confidences):
             xmin, ymin, xmax, ymax = box
-            clsid = np.argmax(pred)
-            if clsid == 0:
-                # in the case of background
-                continue
-            clsid -= 1 # decrement to skip background class
-            prob = np.max(pred)
-            left = max((xmin * self.input_size - ox) / new_w, 0.0) * img_w
-            top = max((ymin * self.input_size - oy) / new_h, 0.0) * img_h
-            right = min((xmax * self.input_size - ox) / new_w, 1.0) * img_w
-            bottom = min((ymax * self.input_size - oy) / new_h, 1.0) * img_h
-            results.append([clsid, prob, left, top, right, bottom])
+            left = int(max((xmin * self.input_size - ox) / new_w, 0.0) * img_w)
+            top = int(max((ymin * self.input_size - oy) / new_h, 0.0) * img_h)
+            right = int(min((xmax * self.input_size - ox) / new_w, 1.0) * img_w)
+            bottom = int(min((ymax * self.input_size - oy) / new_h, 1.0) * img_h)
+            conf = float(conf)
+            name, color = get_classes(clsid)
+            results.append({
+                'left': left,
+                'top': top,
+                'right': right, 
+                'bottom': bottom,
+                'name': name,
+                'color': color,
+                'confidence': conf,
+            })
 
-        if len(results) > 0:
-            return soft_nms(results, self.threshold)
-        else:
-            return {}
+        results = soft_nms(results, self.threshold)
+            
+        return results
