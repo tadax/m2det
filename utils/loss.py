@@ -54,12 +54,18 @@ def calc_box_loss(box_outputs, box_targets, positive_flag, delta=0.1):
     normalizer = num_positives * 4
     normalizer = tf.where(tf.not_equal(normalizer, 0), normalizer, tf.ones_like(normalizer)) # to avoid division by 0
 
+    loss_scale = 2.0 - box_targets[:, :, 2:3] * box_targets[:, :, 3:4]
+
     sq_loss = 0.5 * (box_targets - box_outputs) ** 2
     abs_loss = 0.5 * delta ** 2 + delta * (tf.abs(box_outputs - box_targets) - delta)
     l1_loss = tf.where(tf.less(tf.abs(box_outputs - box_targets), delta), sq_loss, abs_loss)
-    box_loss = tf.reduce_sum(l1_loss, axis=-1)
+
+    box_loss = tf.reduce_sum(l1_loss, axis=-1, keepdims=True)
+    box_loss = box_loss * loss_scale
+    box_loss = tf.reduce_sum(box_loss, axis=-1)
     box_loss = tf.reduce_sum(box_loss * positive_flag, axis=-1)
     box_loss = box_loss / normalizer
+
     return box_loss
 
 def calc_loss(y_true, y_pred, box_loss_weight=50.0):
@@ -83,10 +89,9 @@ def calc_loss(y_true, y_pred, box_loss_weight=50.0):
     num_positives = tf.reduce_sum(positive_flag, axis=-1) # shape: [batch_size,]
 
     box_loss = calc_box_loss(box_outputs, box_targets, positive_flag)
-    #cls_loss = calc_cls_loss(cls_outputs, cls_targets, positive_flag)
+    ##cls_loss = calc_cls_loss(cls_outputs, cls_targets, positive_flag)
     cls_loss = calc_focal_loss(cls_outputs, cls_targets)
 
-    total_loss = cls_loss + box_loss
-    #total_loss = cls_loss + box_loss_weight * box_loss
+    total_loss = cls_loss + box_loss_weight * box_loss
 
     return tf.reduce_mean(total_loss)
