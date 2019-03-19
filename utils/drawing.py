@@ -8,8 +8,8 @@ def draw(frame, results):
     line_type = cv2.LINE_AA
     text_color = (255, 255, 255)
     border_size = int(0.008 * ratio)
-    font_size = float(0.002 * ratio)
-    font_scale = int(0.003 * ratio)
+    font_size = float(0.001 * ratio)
+    font_scale = int(0.002 * ratio)
 
     for result in results:
         text = '{}: {}'.format(result['name'], np.round(result['confidence'], 2))
@@ -21,12 +21,12 @@ def draw(frame, results):
                       thickness=border_size)
         cv2.rectangle(img=frame, 
                       pt1=(result['left'], result['top']),
-                      pt2=(result['left'] + label_width, result['top'] + label_height + border_size),
+                      pt2=(result['left'] + label_width + border_size*2, result['top'] + label_height + border_size*2),
                       color=result['color'], 
                       thickness=-1)
         cv2.putText(img=frame, 
                     text=text, 
-                    org=(result['left'], result['top'] + label_height),
+                    org=(result['left'] + border_size, result['top'] + label_height + border_size),
                     fontFace=font, 
                     fontScale=font_size, 
                     color=text_color,
