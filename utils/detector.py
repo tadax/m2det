@@ -103,6 +103,7 @@ class Detector:
                 'confidence': conf,
             })
 
-        results = soft_nms(results, self.threshold)
+        results = nms(results)
+        #results = soft_nms(results, self.threshold)
             
         return results

@@ -2,14 +2,14 @@ import numpy as np
 import cv2
 
 def draw(frame, results):
-    ratio = min(frame.shape[:2])
+    ratio = max(frame.shape[:2])
 
     font = cv2.FONT_HERSHEY_SIMPLEX
     line_type = cv2.LINE_AA
     text_color = (255, 255, 255)
-    border_size = int(0.008 * ratio)
+    border_size = int(0.005 * ratio)
     font_size = float(0.001 * ratio)
-    font_scale = int(0.002 * ratio)
+    font_scale = int(0.0015 * ratio)
 
     for result in results:
         text = '{}: {}'.format(result['name'], np.round(result['confidence'], 2))
