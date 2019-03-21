@@ -8,11 +8,17 @@ import argparse
 from utils.detector import Detector
 from mscoco import table
 
-def get_classes(index):
+def get_class_name(index):
     obj = [v for k, v in table.mscoco2017.items()]
     sorted(obj, key=lambda x:x[0])
     classes = [j for i, j in obj]
     return classes[index]
+
+def get_class_index(name):
+    obj = [v for k, v in table.mscoco2017.items()]
+    sorted(obj, key=lambda x:x[0])
+    classes = [j for i, j in obj]
+    return classes.index(name)
 
 def calc_iou(box1, box2):
     # box: left, top, right, bottom
@@ -51,11 +57,6 @@ def calc_precision(predict_labels, true_labels, clsid, prob_threshold, iou_thres
                 if true_assign[true_idx]:
                     continue
                 true_clsid, true_xmin, true_ymin, true_xmax, true_ymax = true_el
-                true_clsid = int(true_clsid)
-                true_xmin = float(true_xmin)
-                true_ymin = float(true_ymin)
-                true_xmax = float(true_xmax)
-                true_ymax = float(true_ymax)
                 if true_clsid != clsid:
                     true_assign[true_idx] = None
                     continue
@@ -91,10 +92,11 @@ def main(args):
         model_path=args.model_path, 
         input_size=args.input_size, 
         num_classes=args.num_classes, 
-        threshold=0.0)
+        threshold=0.05)
 
     img_paths = glob.glob(os.path.join(args.image_dir, '*'))
     img_paths.sort()
+    img_paths = img_paths[:100]
 
     predict_labels = []
     true_labels = []
@@ -107,23 +109,32 @@ def main(args):
 
         with open(label_path) as f:
             lines = f.read().splitlines()
-        true_label = [line.split('\t') for line in lines]
-        true_labels.append(true_label)
+
+        label = []
+        for line in lines:
+            elements = line.split('\t')
+            class_index = int(elements[0])
+            xmin = float(elements[1])
+            ymin = float(elements[2])
+            xmax = float(elements[3])
+            ymax = float(elements[4])
+            label.append([class_index, xmin, ymin, xmax, ymax])
+
+        true_labels.append(label)
 
         img = cv2.imread(img_path)
         h_img, w_img = img.shape[:2]
         results = det.detect(img)
         
         label = []
-        for cls, result in results.items():
-            result = sorted(result, key=lambda x:x[0], reverse=True)
-            for prob, coord in result:
-                xmin, ymin, xmax, ymax = [int(i) for i in coord]
-                xmin /= w_img
-                ymin /= h_img
-                xmax /= w_img
-                ymax /= h_img
-                label.append([prob, cls, xmin, ymin, xmax, ymax])
+        for res in results:
+            confidence = res['confidence']
+            class_index = get_class_index(res['name'])
+            xmin = res['left'] / w_img
+            ymin = res['top'] / h_img
+            xmax = res['right'] / w_img
+            ymax = res['bottom'] / h_img
+            label.append([confidence, class_index, xmin, ymin, xmax, ymax])
         predict_labels.append(label)
 
     print('data size: {}'.format(len(predict_labels)))
@@ -159,13 +170,12 @@ def main(args):
             
         AP[clsid] = np.mean(maximum_precision)
 
-    print(AP)
-    for clsid, elem in AP.items():
-        name = get_classes(clsid)
-        print('{} {}: {}'.format(clsid, name, elem*100))
+    for class_index, elem in AP.items():
+        class_name = get_class_name(class_index)
+        print('{} {}: {}'.format(class_index + 1, class_name, elem * 100))
 
     print('----------')
-    print('mAP@0.5: {}'.format(np.mean([v for i, v in AP.items()])*100))
+    print('mAP@0.5: {}'.format(np.mean([v for i, v in AP.items()]) * 100))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
