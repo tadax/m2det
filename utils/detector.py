@@ -71,10 +71,11 @@ class Detector:
         outs = self.sess.run(self.net.prediction, feed_dict={self.inputs: np.array([inp])})[0]
 
         boxes = self.decode_boxes(outs[:, :4])
-        preds = np.argmax(outs[:, 4:], axis=1) - 1 # decrement to skip background class
+        preds = np.argmax(outs[:, 4:], axis=1)
         confidences = np.max(outs[:, 4:], axis=1)
 
-        mask = np.where(preds >= 0)
+        # skip background class
+        mask = np.where(preds > 0)
         boxes = boxes[mask]
         preds = preds[mask]
         confidences = confidences[mask]
@@ -92,7 +93,7 @@ class Detector:
             right = int(min((xmax * self.input_size - ox) / new_w, 1.0) * img_w)
             bottom = int(min((ymax * self.input_size - oy) / new_h, 1.0) * img_h)
             conf = float(conf)
-            name, color = get_classes(clsid)
+            name, color = get_classes(clsid - 1)
             results.append({
                 'left': left,
                 'top': top,
@@ -103,7 +104,7 @@ class Detector:
                 'confidence': conf,
             })
 
-        #results = nms(results)
-        results = soft_nms(results, self.threshold)
+        results = nms(results)
+        #results = soft_nms(results, self.threshold)
             
         return results
