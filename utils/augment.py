@@ -70,7 +70,7 @@ def multi_scale(img, boxes):
     x2 = margin_left + img_w
     y1 = margin_top
     y2 = margin_top + img_h
-    out = np.zeros((new_h, new_w, 3), dtype=np.uint8)
+    out = np.ones((new_h, new_w, 3), dtype=np.uint8) * 127
     out[y1:y2, x1:x2, :] = img
 
     scaled_boxes = []
@@ -109,10 +109,10 @@ def scale(img, labels, img_size):
     return out, scaled_labels
 
 def augment(img, boxes, input_size):
-    #img, boxes = random_crop(img, boxes)
+    img, boxes = random_crop(img, boxes)
     img, boxes = random_flip(img, boxes)
-    #img, boxes = multi_scale(img, boxes)
-    #img = down_sample(img)
+    img, boxes = multi_scale(img, boxes)
+    img = down_sample(img)
     img, boxes = scale(img, boxes, input_size)
     img = normalize(img)
     return img, boxes

@@ -77,7 +77,7 @@ if __name__ == '__main__':
     parser.add_argument('--learning_rate', type=float, default=1e-4)
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--input_size', type=int, default=320)
-    parser.add_argument('--assignment_threshold', type=float, default=0.5)
+    parser.add_argument('--assignment_threshold', type=float, default=0.45)
     parser.add_argument('--num_boxes', type=int, default=19215) # (40x40+20x20+10x10+5x5+3x3+1x1)x9=19215
     parser.add_argument('--gpu', type=str, default='0')
     os.environ['CUDA_VISIBLE_DEVICES'] = parser.parse_args().gpu
