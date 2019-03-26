@@ -92,6 +92,7 @@ def main(args):
         model_path=args.model_path, 
         input_size=args.input_size, 
         num_classes=args.num_classes, 
+        use_sfam=args.sfam,
         threshold=0.05)
 
     img_paths = glob.glob(os.path.join(args.image_dir, '*'))
@@ -183,6 +184,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_path', required=True)
     parser.add_argument('--input_size', type=int, default=320)
     parser.add_argument('--num_classes', type=int, default=80)
+    parser.add_argument('--sfam', action='store_true', default=False)
     parser.add_argument('--gpu', type=str, default='0')
     os.environ['CUDA_VISIBLE_DEVICES'] = parser.parse_args().gpu
     main(parser.parse_args())

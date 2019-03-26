@@ -12,17 +12,18 @@ from utils.nms import soft_nms, nms
 from utils.classes import get_classes
 
 class Detector:
-    def __init__(self, model_path, input_size, num_classes, threshold):
+    def __init__(self, model_path, input_size, num_classes, use_sfam, threshold):
         self.model_path = model_path
         self.input_size = input_size
         self.num_classes = num_classes
+        self.use_sfam = use_sfam
         self.threshold = threshold
         self.priors = generate_priors()
         self.build()
 
     def build(self):
         self.inputs = tf.placeholder(tf.float32, [None, self.input_size, self.input_size, 3])
-        self.net = M2Det(self.inputs, tf.constant(False), self.num_classes)
+        self.net = M2Det(self.inputs, tf.constant(False), self.num_classes, self.use_sfam)
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()

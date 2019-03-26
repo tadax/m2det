@@ -32,7 +32,7 @@ def main(args):
     inputs = tf.placeholder(tf.float32, [None, args.input_size, args.input_size, 3])
     y_true = tf.placeholder(tf.float32, [None, args.num_boxes, y_true_size])
     is_training = tf.constant(True)
-    net = M2Det(inputs, is_training, args.num_classes)
+    net = M2Det(inputs, is_training, args.num_classes, args.sfam)
     y_pred = net.prediction
     total_loss = calc_loss(y_true, y_pred)
 
@@ -79,6 +79,7 @@ if __name__ == '__main__':
     parser.add_argument('--input_size', type=int, default=320)
     parser.add_argument('--assignment_threshold', type=float, default=0.5)
     parser.add_argument('--num_boxes', type=int, default=19215) # (40x40+20x20+10x10+5x5+3x3+1x1)x9=19215
+    parser.add_argument('--sfam', action='store_true', default=False)
     parser.add_argument('--gpu', type=str, default='0')
     os.environ['CUDA_VISIBLE_DEVICES'] = parser.parse_args().gpu
     main(parser.parse_args())

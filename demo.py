@@ -15,6 +15,7 @@ def main(args):
         model_path=args.model_path, 
         input_size=args.input_size, 
         num_classes=args.num_classes, 
+        use_sfam=args.sfam,
         threshold=args.threshold)
 
     if args.inputs.endswith('.mp4'):
@@ -49,6 +50,7 @@ if __name__ == '__main__':
     parser.add_argument('--input_size', type=int, default=320)
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--threshold', type=float, default=0.6)
+    parser.add_argument('--sfam', action='store_true', default=False)
     parser.add_argument('--gpu', type=str, default='-1')
     os.environ['CUDA_VISIBLE_DEVICES'] = parser.parse_args().gpu
     main(parser.parse_args())

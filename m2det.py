@@ -3,8 +3,9 @@ import tensorflow as tf
 from utils.layer import *
 
 class M2Det:
-    def __init__(self, inputs, is_training, num_classes):
+    def __init__(self, inputs, is_training, num_classes, use_sfam=False):
         self.num_classes = num_classes + 1 # for background class
+        self.use_sfam = use_sfam
         self.levels = 8
         self.scales = 6
         self.num_priors = 9
@@ -46,16 +47,19 @@ class M2Det:
                 outs.append(out)
 
             features = []
-            with tf.variable_scope('SFAM'):
-                for i in range(self.scales):
-                    feature = tf.concat([outs[j][i] for j in range(self.levels)], axis=3)
-                    attention = tf.reduce_mean(feature, axis=[1, 2], keepdims=True)
-                    attention = tf.layers.dense(inputs=attention, units=64, 
-                                                activation=tf.nn.relu, name='fc1_{}'.format(i+1))
-                    attention = tf.layers.dense(inputs=attention, units=1024,
-                                                activation=tf.nn.sigmoid, name='fc2_{}'.format(i+1))
-                    feature = feature * attention
-                    features.insert(0, feature)
+            for i in range(self.scales):
+                feature = tf.concat([outs[j][i] for j in range(self.levels)], axis=3)
+
+                if self.use_sfam:
+                    with tf.variable_scope('SFAM'):
+                        attention = tf.reduce_mean(feature, axis=[1, 2], keepdims=True)
+                        attention = tf.layers.dense(inputs=attention, units=64, 
+                                                    activation=tf.nn.relu, name='fc1_{}'.format(i+1))
+                        attention = tf.layers.dense(inputs=attention, units=1024,
+                                                    activation=tf.nn.sigmoid, name='fc2_{}'.format(i+1))
+                        feature = feature * attention
+
+                features.insert(0, feature)
 
             all_cls = []
             all_reg = []
