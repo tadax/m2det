@@ -109,10 +109,10 @@ def scale(img, labels, img_size):
     return out, scaled_labels
 
 def augment(img, boxes, input_size):
-    #img, boxes = random_crop(img, boxes)
+    img, boxes = random_crop(img, boxes)
     img, boxes = random_flip(img, boxes)
-    #img, boxes = multi_scale(img, boxes)
-    #img = down_sample(img)
+    img, boxes = multi_scale(img, boxes)
+    img = down_sample(img)
     img, boxes = scale(img, boxes, input_size)
     img = normalize(img)
     return img, boxes
