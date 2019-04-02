@@ -17,7 +17,12 @@ def main(args):
     logger.addHandler(logging.StreamHandler())
     logger.setLevel(logging.INFO)
     
-    databox = Data(args.image_dir, args.label_dir, args.num_classes, args.input_size, args.assignment_threshold)
+    databox = Data(image_dir=args.image_dir, 
+                   label_dir=args.label_dir,
+                   num_classes=args.num_classes,
+                   input_size=args.input_size, 
+                   shapes=args.shapes, 
+                   assignment_threshold=args.assignment_threshold)
     databox.start()
     dataset_size = databox.size
     logger.info('Dataset size: {}'.format(dataset_size))
@@ -79,6 +84,7 @@ if __name__ == '__main__':
     parser.add_argument('--input_size', type=int, default=320)
     parser.add_argument('--assignment_threshold', type=float, default=0.5)
     parser.add_argument('--num_boxes', type=int, default=19215) # (40x40+20x20+10x10+5x5+3x3+1x1)x9=19215
+    parser.add_argument('--shapes', type=int, nargs='+', default=[40, 20, 10, 5, 3, 1]) # for 320x320
     parser.add_argument('--sfam', action='store_true', default=False)
     parser.add_argument('--gpu', type=str, default='0')
     os.environ['CUDA_VISIBLE_DEVICES'] = parser.parse_args().gpu
