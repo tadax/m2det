@@ -89,10 +89,10 @@ class Detector:
         results = []
         for box, clsid, conf in zip(boxes, preds, confidences):
             xmin, ymin, xmax, ymax = box
-            left = int(max((xmin * self.input_size - ox) / new_w, 0.0) * img_w)
-            top = int(max((ymin * self.input_size - oy) / new_h, 0.0) * img_h)
-            right = int(min((xmax * self.input_size - ox) / new_w, 1.0) * img_w)
-            bottom = int(min((ymax * self.input_size - oy) / new_h, 1.0) * img_h)
+            left = int((xmin * self.input_size - ox) / new_w * img_w)
+            top = int((ymin * self.input_size - oy) / new_h * img_h)
+            right = int((xmax * self.input_size - ox) / new_w * img_w)
+            bottom = int((ymax * self.input_size - oy) / new_h * img_h)
             conf = float(conf)
             name, color = get_classes(clsid - 1)
             results.append({
@@ -105,7 +105,7 @@ class Detector:
                 'confidence': conf,
             })
 
-        results = nms(results)
-        #results = soft_nms(results, self.threshold)
+        #results = nms(results)
+        results = soft_nms(results, self.threshold)
             
         return results
