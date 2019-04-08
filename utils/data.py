@@ -50,7 +50,6 @@ class Data:
             im_path, bb_path = path
             npimg = np.fromfile(im_path, dtype=np.uint8)
             img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
             with open(bb_path) as f:
                 lines = f.read().splitlines()

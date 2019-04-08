@@ -12,15 +12,33 @@ class M2Det:
         self.build(inputs, is_training)
 
     def build(self, inputs, is_training):
-        with tf.variable_scope('VGG16'):
-            net = inputs
-            net = vgg_layer(net, is_training, 64, 2)
-            net = vgg_layer(net, is_training, 128, 2)
-            net = vgg_layer(net, is_training, 256, 3)
-            net = vgg_layer(net, is_training, 512, 3, pooling=False)
-            feature1 = net
-            net = vgg_layer(net, is_training, 1024, 3)
-            feature2 = net
+        net = inputs
+
+        with tf.variable_scope('vgg_16'):
+            with tf.variable_scope('conv1'):
+                net = vgg_layer(net, 64, 'conv1_1')
+                net = vgg_layer(net, 64, 'conv1_2')
+                net = pooling_layer(net)
+            with tf.variable_scope('conv2'):
+                net = vgg_layer(net, 128, 'conv2_1')
+                net = vgg_layer(net, 128, 'conv2_2')
+                net = pooling_layer(net)
+            with tf.variable_scope('conv3'):
+                net = vgg_layer(net, 256, 'conv3_1')
+                net = vgg_layer(net, 256, 'conv3_2')
+                net = vgg_layer(net, 256, 'conv3_3')
+                net = pooling_layer(net)
+            with tf.variable_scope('conv4'):
+                net = vgg_layer(net, 512, 'conv4_1')
+                net = vgg_layer(net, 512, 'conv4_2')
+                net = vgg_layer(net, 512, 'conv4_3')
+                feature1 = net
+            with tf.variable_scope('conv5'):
+                net = vgg_layer(net, 512, 'conv5_1')
+                net = vgg_layer(net, 512, 'conv5_2')
+                net = vgg_layer(net, 512, 'conv5_3')
+                net = pooling_layer(net)
+                feature2 = net
 
         with tf.variable_scope('M2Det'):
             with tf.variable_scope('FFMv1'):
@@ -88,3 +106,5 @@ if __name__ == '__main__':
     is_training = tf.constant(False)
     num_classes = 80
     m2det = M2Det(inputs, is_training, num_classes)
+    for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES):
+        print(v.name, v.shape)

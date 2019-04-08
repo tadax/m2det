@@ -37,6 +37,7 @@ def main(args):
     inputs = tf.placeholder(tf.float32, [None, args.input_size, args.input_size, 3])
     y_true = tf.placeholder(tf.float32, [None, args.num_boxes, y_true_size])
     is_training = tf.constant(True)
+    learning_rate = tf.placeholder(tf.float32, [])
     net = M2Det(inputs, is_training, args.num_classes, args.sfam)
     y_pred = net.prediction
     total_loss = calc_loss(y_true, y_pred, box_loss_weight=args.scale)
@@ -49,13 +50,22 @@ def main(args):
     train_var = tf.trainable_variables()
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
-        opt = tf.train.MomentumOptimizer(learning_rate=args.learning_rate, momentum=0.9)
+        opt = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=0.9)
         grads = tf.gradients(total_loss, train_var)
         train_op = opt.apply_gradients(zip(grads, train_var), global_step=global_step)
 
     sess = tf.Session()
     init_op = tf.global_variables_initializer()
     sess.run(init_op)
+
+    if args.pretrained_model_path:
+        restore_var = []
+        for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES):
+            if 'vgg_16' in v.name and 'Momentum' not in v.name:
+                restore_var.append(v)
+        saver = tf.train.Saver(restore_var)
+        saver.restore(sess, args.pretrained_model_path)
+        logger.info('Pretrained model is restored')
 
     if tf.train.get_checkpoint_state(args.model_dir):
         saver = tf.train.Saver()
@@ -64,10 +74,19 @@ def main(args):
 
     while True:
         x_batch, t_batch = databox.get(args.batch_size)
-        _, loss_value = sess.run([train_op, total_loss], feed_dict={inputs: x_batch, y_true: t_batch})
         step_value = sess.run(global_step)
-        logger.info('step: {}, loss: {}'.format(step_value, loss_value))
-        if (step_value) % 1000 == 0:
+        if step_value < args.burnin_iter:
+            lr = args.learning_rate * pow(step_value / args.burnin_iter, 4)
+        else:
+            lr = args.learning_rate
+
+        _, loss_value = sess.run([train_op, total_loss], 
+                                 feed_dict={
+                                    inputs: x_batch, 
+                                    y_true: t_batch,
+                                    learning_rate: lr})
+        logger.info('step: {}, loss: {}, lr: {}'.format(step_value + 1, loss_value, lr))
+        if (step_value + 1) % 1000 == 0:
             saver = tf.train.Saver()
             dst = os.path.join(args.model_dir, 'variables')
             saver.save(sess, dst, write_meta_graph=False)
@@ -77,9 +96,11 @@ if __name__ == '__main__':
     parser.add_argument('--image_dir', required=True)
     parser.add_argument('--label_dir', required=True)
     parser.add_argument('--model_dir', default='weights/')
+    parser.add_argument('--pretrained_model_path', default=None)
     parser.add_argument('--log_path', default='weights/out.log')
     parser.add_argument('--batch_size', type=int, default=16)
-    parser.add_argument('--learning_rate', type=float, default=1e-4)
+    parser.add_argument('--learning_rate', type=float, default=1e-3)
+    parser.add_argument('--burnin_iter', type=int, default=20000)
     parser.add_argument('--scale', type=float, default=20.0)
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--input_size', type=int, default=320)

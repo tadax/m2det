@@ -1,8 +1,9 @@
 import numpy as np
 import cv2
 
-def normalize(img):
-    img = (img - 127.5) / 128.0
+def vgg_preprocessing(img):
+    VGG_MEAN = np.array([103.939, 116.779, 123.68]) # BGR order
+    img = img - VGG_MEAN
     return img
 
 def random_crop(img, boxes):
@@ -114,5 +115,5 @@ def augment(img, boxes, input_size):
     #img, boxes = multi_scale(img, boxes)
     #img = down_sample(img)
     img, boxes = scale(img, boxes, input_size)
-    img = normalize(img)
+    img = vgg_preprocessing(img)
     return img, boxes

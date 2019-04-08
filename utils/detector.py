@@ -52,7 +52,6 @@ class Detector:
         return decode_bbox
 
     def preprocess(self, img):
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img_h, img_w = img.shape[:2]
         ratio = max(img_h, img_w) / self.input_size
         new_h = int(img_h / ratio)
@@ -62,7 +61,8 @@ class Detector:
         scaled = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
         inp = np.ones((self.input_size, self.input_size, 3), dtype=np.uint8) * 127
         inp[oy:oy + new_h, ox:ox + new_w, :] = scaled
-        inp = (inp - 127.5) / 128.0
+        VGG_MEAN = np.array([103.939, 116.779, 123.68]) # BGR order
+        inp = inp - VGG_MEAN
         return inp, ox, oy, new_w, new_h
 
     def detect(self, img):

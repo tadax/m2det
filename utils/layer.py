@@ -43,13 +43,32 @@ def block_layer(x, is_training, filters, num_blocks, strides):
         x = bottleneck_block_v2(x, filters, is_training, 1)
     return x
 
-def vgg_layer(x, is_training, filters, num_blocks, pooling=True):
-    for _ in range(num_blocks):
-        x = conv2d_layer(x, filters, 3, 1)
-        x = tf.nn.relu(batch_norm(x, is_training))
-    if pooling:
-        x = tf.layers.max_pooling2d(x, 2, 2, padding='VALID')
-    return x 
+def vgg_layer(x, filters, name, kernel_size=3):
+    padding = 'VALID'
+    pad_total = kernel_size - 1 
+    pad_beg = pad_total // 2
+    pad_end = pad_total - pad_beg
+    x = tf.pad(x, [[0, 0], [pad_beg, pad_end], [pad_beg, pad_end], [0, 0]])
+
+    with tf.variable_scope(name):
+        kernel = tf.get_variable(
+            name='weights', dtype=tf.float32, 
+            shape=[kernel_size, kernel_size, x.shape[-1], filters],
+            initializer=tf.variance_scaling_initializer())
+
+        biases = tf.get_variable(
+            name='biases', dtype=tf.float32,
+            shape=[filters], initializer=tf.zeros_initializer())
+
+    x = tf.nn.conv2d(input=x, filter=kernel, strides=[1, 1, 1, 1], padding=padding)
+    x = x + biases
+
+    x = tf.nn.relu(x)
+
+    return x
+
+def pooling_layer(x):
+    return tf.layers.max_pooling2d(x, 2, 2, padding='VALID')
 
 def flatten_layer(x):
     sh = x.shape
