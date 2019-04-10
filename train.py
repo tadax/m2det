@@ -79,7 +79,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_dir', default='weights/')
     parser.add_argument('--log_path', default='weights/out.log')
     parser.add_argument('--batch_size', type=int, default=16)
-    parser.add_argument('--learning_rate', type=float, default=1e-4)
+    parser.add_argument('--learning_rate', type=float, default=1e-3)
     parser.add_argument('--scale', type=float, default=20.0)
     parser.add_argument('--num_classes', type=int, default=80)
     parser.add_argument('--input_size', type=int, default=320)
